@@ -1,8 +1,9 @@
 // KoffyKraft (C) 2026 T M Thomas. AGPL-3.0 with additional terms (attribution, names): see NOTICE.
-const CACHE = 'koko-v1';
+const CACHE = 'koko-v2';
 const CORE = [
   './home.html',
   './farm.html',
+  './map.html',
   './bar.html',
   './taste.html',
   './learn.html',

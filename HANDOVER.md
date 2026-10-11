@@ -14,6 +14,7 @@ Read this first in any new chat. Koko is the cocoa edition of KoffyKraft, built 
 - Offline: sw.js (CACHE koko-vN, bump on every release), registered from koko.js on every page.
 
 ## Pages
+- map (from KoffyKraft map.html: block outlines on satellite, area, height, spots with Koko kinds, KML, GeoJSON, print; #plot/<id> and #green/<id>; plot clone shown as variety)
 - home, farm (all farm records, cut test and grade, bean count, density, starter yeast dose, passport plan), bar (batch: roast, winnow shell %, recipe weights, refine, conche, temper guide), taste (0 to 10 attributes, off-flavours), learn (pod to bar, crop care, varieties, world, grades), trail (device only, KokoTrails), trace (lot passports, KokoTrace key store), account (sign-in, sync, save and restore all records, feedback), license, privacy, terms.
 - Shared: koko.css, koko.js (header, footer, toast), koko-data.js (all cocoa facts and sums with sources in KOKO_SRC), kk.css, kk-base.js, kk-units.js, tap.js, sync.js, origin-db.js, trace-core.js, qrcode.js.
 

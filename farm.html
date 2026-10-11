@@ -281,7 +281,9 @@ async function listView(t) {
     t +
     '">＋ New ' +
     tb[3].toLowerCase() +
-    '</a></div>' +
+    '</a>' +
+    (t === 'estate' || t === 'plot' ? '<a class="btn" href="map.html">Map of farm and blocks</a>' : '') +
+    '</div>' +
     (rows.length
       ? rows
           .map(
@@ -669,7 +671,18 @@ async function editView(t, id) {
     (t === 'harvest' || t === 'green' ? { date: today() } : t === 'estate' ? { country: 'India' } : {});
   const tb = tabOf(t);
   let extra = '';
-  if (t === 'plot') extra = '<div class="full mini" id="densOut"></div>';
+  if (t === 'plot')
+    extra =
+      '<div class="full mini" id="densOut"></div>' +
+      (CUR
+        ? '<div class="full"><a class="btn small" href="map.html#plot/' +
+          encodeURIComponent(CUR.id) +
+          '">' +
+          (Array.isArray(CUR.geo) && CUR.geo.length > 2
+            ? 'See outline on the map'
+            : 'Draw its outline on the map') +
+          '</a></div>'
+        : '');
   if (t === 'process')
     extra =
       '<div class="guide full" id="starterGuide"></div><div class="guide full" id="methodGuide"></div><div class="card full mini" id="runOut"></div>';
@@ -686,7 +699,9 @@ async function editView(t, id) {
       (batches.length
         ? '<br>' + batches.length + ' chocolate batch' + (batches.length > 1 ? 'es' : '') + ' made from it.'
         : '') +
-      '</div><div class="row" style="margin-top:8px"><button class="btn small cocoa" type="button" id="pass">Passport and QR</button><a class="btn small" href="bar.html#new/' +
+      '</div><div class="row" style="margin-top:8px"><button class="btn small cocoa" type="button" id="pass">Passport and QR</button><a class="btn small" href="map.html#green/' +
+      encodeURIComponent(CUR.id) +
+      '">Where it grew</a><a class="btn small" href="bar.html#new/' +
       encodeURIComponent(CUR.id) +
       '">Make a batch</a><a class="btn small" href="taste.html#new/' +
       encodeURIComponent(CUR.id) +
@@ -736,6 +751,7 @@ async function editView(t, id) {
   live();
   $('#save').onclick = async () => {
     const rec = collect(t);
+    if (t === 'estate' && rec.altitude !== '') rec.altUnit = 'm';
     const miss = FIELDS[t]
       .filter(f => f[3] && f[3].req && (rec[f[0]] === '' || rec[f[0]] == null))
       .map(f => f[1]);
@@ -816,11 +832,13 @@ function openPassport(g) {
   const own = g.traceRole !== 'received';
   const L = lineage(g);
   const items = [];
-  const rec = (t, r, kg) =>
-    items.push({ kind: 'record', rtype: t, rid: r.id, card: card(t, r), kg: kg || {}, geo: null });
+  const rec = (t, r, kg, geo) =>
+    items.push({ kind: 'record', rtype: t, rid: r.id, card: card(t, r), kg: kg || {}, geo: geo || null });
   if (own) {
     L.estates.forEach(e => rec('estate', e));
-    L.plots.forEach(p => rec('plot', p));
+    L.plots.forEach(p =>
+      rec('plot', p, {}, Array.isArray(p.geo) && p.geo.length > 2 ? p.geo.map(x => [+x[0], +x[1]]) : null)
+    );
     L.hs.forEach(h => rec('harvest', h, { cherry: +h.wetKg || null }));
     if (L.p) rec('process', L.p, { in: +L.p.wetKg || null, out: +L.p.dryKg || null });
     rec('green', g, { green: +g.weightKg || null });

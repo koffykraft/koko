@@ -35,7 +35,7 @@ export async function run(root, t) {
   await ctx.route(/cdnjs|tile|arcgis|openstreetmap|googleapis/, r => r.abort());
   try {
     // 1. every page opens cleanly
-    const pages = ['home', 'farm', 'bar', 'taste', 'learn', 'trail', 'trace', 'account', 'license', 'privacy', 'terms'];
+    const pages = ['home', 'farm', 'map', 'bar', 'taste', 'learn', 'trail', 'trace', 'account', 'license', 'privacy', 'terms'];
     const p = await ctx.newPage();
     await p.route('**/api/**', r => r.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"authentication required"}' }));
     for (const f of pages) {
@@ -103,6 +103,17 @@ export async function run(root, t) {
       if (types !== 'estate,plot,harvest,process,green') throw new Error(types);
       if (plan.items[2].kg.cherry !== 90 || plan.items[4].kg.green !== 33) throw new Error('weights');
       if (!/trace\.html#seal$/.test(q.url())) throw new Error('not on the seal page');
+    });
+    await t.acheck('Map: blocks and the lot show, with Koko place kinds', async () => {
+      const stub = 'const mk=()=>{const f=function(){return p};const p=new Proxy(f,{get:(t,k)=>k==="then"?undefined:p,apply:()=>p});return p};window.L=mk();';
+      await q.route(/leaflet.*\.js/, r => r.fulfill({ contentType: 'text/javascript', body: stub }));
+      const lot = await q.evaluate(async () => (await ORIGIN.all('green'))[0].id);
+      await q.goto(base + 'map.html#green/' + lot); await q.waitForTimeout(700);
+      const txt = await q.innerText('body');
+      if (!txt.includes('Block 1') || !txt.includes('CCRP 1') || !txt.includes('KC-1')) throw new Error(txt.slice(0, 300));
+      const kinds = await q.evaluate(() => KINDS.join(','));
+      if (!kinds.includes('Fermentary') || kinds.includes('Pulping')) throw new Error(kinds);
+      await q.unroute(/leaflet.*\.js/);
     });
     await t.acheck('Bean to bar: shell share, recipe weights and temper warning', async () => {
       await q.goto(base + 'bar.html#new'); await q.waitForTimeout(400);
