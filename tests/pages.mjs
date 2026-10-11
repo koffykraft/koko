@@ -127,11 +127,15 @@ export async function run(root, t) {
       await q.fill('[data-p="nibs"]', '65'); await q.fill('[data-p="butter"]', '5'); await q.fill('[data-p="sugar"]', '30');
       const sh = await q.$eval('#shellOut', e => e.innerText); if (!sh.includes('15.2%')) throw new Error(sh);
       const r = await q.$eval('#recOut', e => e.innerText); if (!r.includes('70% cocoa') || !r.includes('6 kg') || !r.includes('1.8 kg sugar')) throw new Error(r);
+      await fill('outKg', 5.7); await fill('bars', 50);
+      const ch = await q.$eval('#chainOut', e => e.innerText);
+      for (const w of ['−8%', '−15.2%', '−5%', '74.1% of the dry beans', '25.9%', '100 g of dry beans per bar']) if (!ch.includes(w)) throw new Error('chain missing ' + w + ': ' + ch);
       await q.selectOption('#form [data-k="chocType"]', 'Dark'); await fill('tWork', 35);
       if (!(await q.$eval('#temperOut', e => e.innerText)).includes('loses the temper')) throw new Error('no temper warning');
       await save();
       await q.goto(base + 'bar.html'); await q.waitForTimeout(300);
       if (!(await q.innerText('#view')).includes('70% Thumpassery')) throw new Error('batch not listed');
+      const cmp = await q.innerText('#view'); if (!/weight loss, batch by batch/i.test(cmp) || !cmp.includes('74.1%')) throw new Error('no batch comparison: ' + cmp.slice(-600));
     });
     await t.acheck('Taste: a tasting of the batch is saved with its profile', async () => {
       await q.goto(base + 'taste.html#new'); await q.waitForTimeout(400);

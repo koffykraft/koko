@@ -607,3 +607,35 @@ function polyHa(g) {
   }
   return Math.abs(a) / 2 / 10000;
 }
+
+// ---------- weight from dry beans to chocolate, one batch ----------
+// Each step's loss, and how much of the dry beans ends up as cocoa in the chocolate. Added
+// cocoa butter, sugar and milk are kept apart so the bean figures stay honest.
+function batchChain(b) {
+  const n = v => (v === '' || v == null || !isFinite(+v) || +v <= 0 ? null : +v);
+  const beans = n(b.beansKg),
+    roasted = n(b.winIn),
+    nibs = n(b.nibsKg),
+    out = n(b.outKg);
+  const pct = (a, z) => (a != null && z != null ? Math.round((1 - a / z) * 1000) / 10 : null);
+  const rec = recipe(nibs, b.pct || {});
+  const nibShare = +(b.pct || {}).nibs > 0 ? +b.pct.nibs / 100 : null;
+  const planned = rec.total || null;
+  const nibsInBar = out != null && nibShare ? out * nibShare : null;
+  const r2 = x => (x == null ? null : Math.round(x * 100) / 100);
+  return {
+    beans,
+    roasted,
+    nibs,
+    out,
+    roastLoss: pct(roasted, beans), // moisture and volatiles lost in the roast
+    shellLoss: pct(nibs, roasted), // shell, germ and dust in winnowing
+    processLoss: pct(out, planned), // left in the melanger, temperer and moulds
+    planned: r2(planned),
+    nibsInBar: r2(nibsInBar),
+    beanToBar: nibsInBar != null && beans ? Math.round((nibsInBar / beans) * 1000) / 10 : null, // % of dry beans that became chocolate
+    totalLoss: nibsInBar != null && beans ? Math.round((1 - nibsInBar / beans) * 1000) / 10 : null,
+    beansPerKg: nibsInBar && beans ? r2(beans / out) : null, // kg dry beans per kg of chocolate
+    beansPerBar: beans && +b.bars ? Math.round((beans * 1000) / +b.bars) : null, // g dry beans per bar
+  };
+}

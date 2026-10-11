@@ -91,7 +91,95 @@ async function listView() {
           );
         }).join('')
       : '<div class="card mini">No batches yet. Start from a dry bean lot on the Farm page, or from beans you bought.</div>') +
+    compareHtml() +
     tempGuide();
+}
+const pc = v => (v == null ? '–' : v + '%');
+const kg = v => (v == null ? '–' : v + ' kg');
+// The weight story of one batch, step by step.
+function chainHtml(b) {
+  const c = batchChain(b);
+  if (!c.beans)
+    return '<span class="mini">Fill in dry beans in, roasted beans, nibs and chocolate out to see where the weight goes.</span>';
+  const row = (l, w, loss, note) =>
+    '<tr><td>' +
+    l +
+    '</td><td><b>' +
+    kg(w) +
+    '</b></td><td>' +
+    (loss == null ? '' : '−' + loss + '%') +
+    '</td><td class="mini">' +
+    (note || '') +
+    '</td></tr>';
+  return (
+    '<b>Weight from dry beans to chocolate</b><table class="t" style="margin-top:6px"><tr><th>Step</th><th>Weight</th><th>Lost</th><th></th></tr>' +
+    row('Dry beans in', c.beans, null, '') +
+    row('After roasting', c.roasted, c.roastLoss, 'water and volatiles') +
+    row('Nibs after winnowing', c.nibs, c.shellLoss, 'shell, germ, dust') +
+    (c.planned ? row('Chocolate mass planned', c.planned, null, 'nibs plus added butter, sugar, milk') : '') +
+    row('Chocolate out', c.out, c.processLoss, 'left in machines and moulds') +
+    '</table>' +
+    (c.beanToBar != null
+      ? '<div style="margin-top:8px"><b>' +
+        c.beanToBar +
+        '% of the dry beans</b> ended up in the chocolate as cocoa (' +
+        kg(c.nibsInBar) +
+        ' of nibs in ' +
+        kg(c.out) +
+        ' of chocolate), so <b>' +
+        c.totalLoss +
+        '%</b> was lost on the way.' +
+        (c.beansPerKg ? ' ' + c.beansPerKg + ' kg of dry beans per kg of chocolate.' : '') +
+        (c.beansPerBar ? ' About ' + c.beansPerBar + ' g of dry beans per bar.' : '') +
+        '</div>'
+      : '<div class="mini" style="margin-top:6px">Add the recipe nibs % and chocolate out to see how much of the beans reached the bar.</div>')
+  );
+}
+// Batch against batch: the same losses side by side, newest first.
+function compareHtml() {
+  const rows = BATCHES.map(b => [b, batchChain(b)]).filter(([, c]) => c.beans);
+  if (rows.length < 1) return '';
+  const avg = k => {
+    const v = rows.map(([, c]) => c[k]).filter(x => x != null);
+    return v.length ? Math.round((v.reduce((a, x) => a + x, 0) / v.length) * 10) / 10 : null;
+  };
+  return (
+    '<h2>Weight loss, batch by batch</h2><div class="card" style="overflow-x:auto"><table class="t"><tr><th>Batch</th><th>Beans</th><th>Roast</th><th>Shell</th><th>Machines</th><th>Beans to bar</th></tr>' +
+    rows
+      .map(
+        ([b, c]) =>
+          '<tr><td><a href="#edit/' +
+          encodeURIComponent(b.id) +
+          '">' +
+          esc(b.name || 'Batch') +
+          '</a><div class="mini">' +
+          esc(fmtDate(b.date)) +
+          '</div></td><td>' +
+          kg(c.beans) +
+          '</td><td>' +
+          pc(c.roastLoss) +
+          '</td><td>' +
+          pc(c.shellLoss) +
+          '</td><td>' +
+          pc(c.processLoss) +
+          '</td><td><b>' +
+          pc(c.beanToBar) +
+          '</b></td></tr>'
+      )
+      .join('') +
+    (rows.length > 1
+      ? '<tr><td><b>Average</b></td><td></td><td>' +
+        pc(avg('roastLoss')) +
+        '</td><td>' +
+        pc(avg('shellLoss')) +
+        '</td><td>' +
+        pc(avg('processLoss')) +
+        '</td><td><b>' +
+        pc(avg('beanToBar')) +
+        '</b></td></tr>'
+      : '') +
+    '</table><div class="mini" style="margin-top:6px">Roast: weight lost roasting. Shell: lost in cracking and winnowing. Machines: chocolate left in the melanger, temperer and moulds. Beans to bar: share of the dry bean weight that reached the chocolate as cocoa.</div></div>'
+  );
 }
 function tempGuide() {
   return (
@@ -222,7 +310,7 @@ async function editView(id, lotId) {
     F('bars', 'Bars', 'number') +
     F('barG', 'Bar weight, g', 'number') +
     F('outKg', 'Chocolate out, kg', 'number') +
-    '<div class="full mini" id="yieldOut"></div>' +
+    '<div class="card full" id="chainOut"></div>' +
     F('notes', 'Notes', 'area') +
     '</div><div class="row bar"><button class="btn cocoa" id="save">Save</button>' +
     (id ? '<a class="btn" href="taste.html#batch/' + encodeURIComponent(id) + '">Taste it</a>' : '') +
@@ -302,10 +390,7 @@ function live() {
         ? ' <b style="color:var(--bad)">Working above ' + tg.max + ' °C loses the temper.</b>'
         : '')
     : '';
-  $('#yieldOut').textContent =
-    s.yieldPct != null
-      ? 'Chocolate out is ' + s.yieldPct + '% of the dry bean weight (sugar and other additions included).'
-      : '';
+  $('#chainOut').innerHTML = chainHtml(b);
 }
 function route() {
   const h = location.hash.slice(1);
