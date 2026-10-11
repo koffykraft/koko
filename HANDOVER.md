@@ -18,8 +18,13 @@ Read this first in any new chat. Koko is the cocoa edition of KoffyKraft, built 
 - home, farm (all farm records, cut test and grade, bean count, density, starter yeast dose, passport plan), bar (batch: roast, winnow shell %, recipe weights, refine, conche, temper guide), taste (0 to 10 attributes, off-flavours), learn (pod to bar, crop care, varieties, world, grades), trail (device only, KokoTrails), trace (lot passports, KokoTrace key store), account (sign-in, sync, save and restore all records, feedback), license, privacy, terms.
 - Shared: koko.css, koko.js (header, footer, toast), koko-data.js (all cocoa facts and sums with sources in KOKO_SRC), kk.css, kk-base.js, kk-units.js, tap.js, sync.js, origin-db.js, trace-core.js, qrcode.js.
 
+## Protocols and designations (11 Oct 2026)
+- koko-data.js PROTOCOLS: 7 fermentation protocols with an evidence level (Standard, Practice, Trial, Experimental); picking one on a run fills method, before-fermenting and starter. Fields protocol and fruit on runs.
+- DESIGNATIONS on dry lots (checks): ICCO Annex C fine or flavour origin (country listing, India not listed, Oct 2023), Heirloom (HCP), geographical indication (Chuao example), organic, Fairtrade, Rainforest Alliance, single estate, starter, fruit co-fermentation. eudrCheck() checks each block of a lot: GPS point, or outline over 4 ha (polyHa from the outline).
+- Learn tabs: Protocols, Designations.
+
 ## Sources used
-ICAR-CPCRI fermentation methods; ICCO harvesting and post-harvest, processing cocoa, Global Review and Global Guide to Cocoa Farming Systems (2022); ISO 2451:2017 via TCVN 7519:2020; NEPC grade table; Cocoa Research Centre KAU (varieties, crop protection); FCIA Fine Chocolate Glossary; Callebaut tempering; Lallemand LALCOCOA brochures; De Vuyst and Weckx (2016) J Appl Microbiol 121:5-17.
+ICAR-CPCRI fermentation methods; ICCO harvesting and post-harvest, processing cocoa, Global Review and Global Guide to Cocoa Farming Systems (2022); ISO 2451:2017 via TCVN 7519:2020; NEPC grade table; Cocoa Research Centre KAU (varieties, crop protection); FCIA Fine Chocolate Glossary; Callebaut tempering; Lallemand LALCOCOA brochures; De Vuyst and Weckx (2016) J Appl Microbiol 121:5-17; Streule et al. (2024) Foods 13:1536; Eskes et al. (2012) ICRC; Pena Gonzalez et al. (2023) BJFT; ICCO Annex C revision (2023); HCP; WIPO Chuao; EFI EUDR factsheet (2026).
 - Not used: a SlideShare deck on cocoa fermentation (not peer reviewed and the page could not be read).
 
 ## Tests and release

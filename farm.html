@@ -141,11 +141,13 @@ const FIELDS = {
     ['code', 'Run name or code', 'text', { req: 1, ph: 'F-12' }],
     ['harvestIds', 'From pod harvests', 'links', { type: 'harvest' }],
     ['sec', 'Fermentation'],
+    ['protocol', 'Protocol', 'select', { opts: PROTOCOLS.map(x => x.name) }],
     ['method', 'Method', 'select', { opts: Object.keys(FERMENT_METHODS) }],
     ['vessel', 'Box or vessel', 'text', { ph: 'Box 2, teak' }],
     ['precond', 'Before fermenting', 'select', { opts: PRECOND }],
     ['starter', 'Starter yeast', 'select', { opts: ['None', ...Object.keys(STARTERS), 'Other'] }],
     ['starterG', 'Yeast added, g', 'num'],
+    ['fruit', 'Fruit or pulp added', 'text', { ph: 'None, or what and how much' }],
     ['start', 'Started', 'datetime-local'],
     ['wetKg', 'Wet beans in, kg', 'num'],
     ['turns', 'Turns and temperatures', 'turns'],
@@ -169,6 +171,7 @@ const FIELDS = {
     ['bagKg', 'Bag size, kg', 'num'],
     ['cut', 'Cut test', 'cut'],
     ['beans', 'Bean count', 'beans'],
+    ['designations', 'Designations and claims', 'checks', { opts: DESIGNATIONS.map(x => x[0]) }],
     ['storage', 'Stored where', 'text'],
     ['notes', 'Notes', 'area'],
   ],
@@ -223,7 +226,7 @@ function facts(t, r) {
   if (t === 'process') {
     const s = fermentSummary(r);
     f.push(
-      r.method,
+      r.protocol || r.method,
       s.fermentHours ? Math.round((s.fermentHours / 24) * 10) / 10 + ' days' : '',
       s.peak ? 'peak ' + s.peak + ' °C' : '',
       s.moisture != null ? s.moisture + '% moisture' : '',
@@ -367,6 +370,29 @@ function fieldHtml(t, f, r) {
         )
         .join('') +
       '</select></label>'
+    );
+  }
+  if (ty === 'checks') {
+    const on = new Set(Array.isArray(v) ? v : []);
+    return (
+      '<div class="f full checks" data-checks="' +
+      k +
+      '"><div class="mini" style="font-weight:600">' +
+      lab +
+      '</div>' +
+      o.opts
+        .map(
+          x =>
+            '<label><input type="checkbox" value="' +
+            esc(x) +
+            '"' +
+            (on.has(x) ? ' checked' : '') +
+            '>' +
+            esc(x) +
+            '</label>'
+        )
+        .join('') +
+      '<div class="mini" id="desigOut"></div></div>'
     );
   }
   if (ty === 'links') {
@@ -533,6 +559,9 @@ function collect(t) {
   document
     .querySelectorAll('#form [data-links]')
     .forEach(el => (r[el.dataset.links] = [...el.querySelectorAll('input:checked')].map(i => i.value)));
+  document
+    .querySelectorAll('#form [data-checks]')
+    .forEach(el => (r[el.dataset.checks] = [...el.querySelectorAll('input:checked')].map(i => i.value)));
   document.querySelectorAll('#form [data-list]').forEach(el => {
     r[el.dataset.list] = [...el.querySelectorAll('.lrow')]
       .map(row => {
@@ -562,6 +591,45 @@ function lineage(g) {
 function live() {
   if (CUR_T === 'green') {
     const r = collect('green');
+    const L = lineage(r);
+    const sel = DESIGNATIONS.filter(d => (r.designations || []).includes(d[0]));
+    const eu = eudrCheck(L.plots);
+    const single = L.estates.length === 1;
+    $('#desigOut').innerHTML =
+      sel
+        .map(
+          d =>
+            '<div style="margin-top:6px"><b style="color:var(--ink)">' +
+            esc(d[0]) +
+            '.</b> ' +
+            esc(d[1]) +
+            (d[2] ? ' ' + srcLink(d[2]) : '') +
+            (d[0] === 'Single estate' && !single
+              ? ' <b style="color:var(--bad)">This lot links to ' + L.estates.length + ' farms.</b>'
+              : '') +
+            '</div>'
+        )
+        .join('') +
+      '<div class="card" style="margin-top:8px"><b style="color:var(--ink)">EU deforestation rule</b><br>' +
+      (eu.length
+        ? eu
+            .map(
+              x =>
+                (x.ok ? '✓ ' : '✗ ') +
+                esc(x.name) +
+                (x.ha != null ? ' (' + x.ha + ' ha)' : '') +
+                ': needs a ' +
+                (x.need === 'outline' ? 'drawn outline' : 'GPS point') +
+                (x.ok ? '' : ', missing')
+            )
+            .join('<br>') +
+          (eu.every(x => x.ok)
+            ? '<br><b style="color:var(--ok)">Location ready for every block.</b> You still need proof of no clearing after 31 December 2020.'
+            : '<br>Add the missing locations on the block or the map.')
+        : 'Link the lot to a fermentation run to check its blocks.') +
+      '<br><small>Each plot needs a GPS point; plots over 4 ha need an outline, six decimal places. Large operators apply the rule from 31 December 2026. ' +
+      srcLink('EUDR') +
+      '</small></div>';
     const c = cutTest(r.cut);
     $('#cutOut').innerHTML = c
       ? '<b>' +
@@ -604,6 +672,21 @@ function live() {
       : '';
   }
   if (CUR_T === 'process') {
+    const pr = PROTOCOLS.find(x => x.name === $('[data-k="protocol"]').value);
+    $('#protoGuide').innerHTML = pr
+      ? '<b>' +
+        esc(pr.name) +
+        '</b> <span class="tag' +
+        (pr.level === 'Standard' ? ' ok' : pr.level === 'Experimental' ? ' bad' : ' wait') +
+        '">' +
+        pr.level +
+        '</span><ol style="margin:6px 0 0 18px;padding:0">' +
+        pr.steps.map(x => '<li>' + esc(x) + '</li>').join('') +
+        '</ol><small>' +
+        srcLink(pr.src) +
+        (pr.src === 'ESK' ? ' · ' + srcLink('PENA') : '') +
+        '</small>'
+      : '';
     const s = fermentSummary(collect('process'));
     const m = FERMENT_METHODS[$('[data-k="method"]').value];
     $('#runOut').innerHTML =
@@ -685,7 +768,7 @@ async function editView(t, id) {
         : '');
   if (t === 'process')
     extra =
-      '<div class="guide full" id="starterGuide"></div><div class="guide full" id="methodGuide"></div><div class="card full mini" id="runOut"></div>';
+      '<div class="guide full" id="protoGuide"></div><div class="guide full" id="starterGuide"></div><div class="guide full" id="methodGuide"></div><div class="card full mini" id="runOut"></div>';
   if (t === 'green' && CUR) {
     const L = lineage(CUR);
     const batches = (DB.batch || []).filter(b => b.lotId === CUR.id);
@@ -725,6 +808,16 @@ async function editView(t, id) {
     '</div>';
   const form = $('#form');
   form.addEventListener('input', live);
+  form.addEventListener('change', e => {
+    if (!e.target.matches('[data-k="protocol"]')) return;
+    const pr = PROTOCOLS.find(x => x.name === e.target.value);
+    if (!pr) return;
+    for (const k of ['method', 'precond', 'starter']) {
+      const el = form.querySelector('[data-k="' + k + '"]');
+      if (el && pr[k]) el.value = pr[k];
+    }
+    live();
+  });
   form.addEventListener('change', live);
   form.addEventListener('click', e => {
     const add = e.target.closest('[data-add]');
@@ -794,7 +887,10 @@ function card(t, r) {
     process: (() => {
       const s = fermentSummary(r);
       return [
+        ['Protocol', r.protocol],
         ['Method', r.method],
+        ['Starter yeast', r.starter && r.starter !== 'None' ? r.starter : ''],
+        ['Fruit added', r.fruit],
         ['Wet beans in', r.wetKg ? r.wetKg + ' kg' : ''],
         ['Fermentation', s.fermentHours ? s.fermentHours + ' h' : ''],
         ['Turns', s.turns || ''],
@@ -813,6 +909,7 @@ function card(t, r) {
         ['Grade', c ? c.grade + ', ' + c.ferm : ''],
         ['Fully brown', c ? c.pct.brown + '%' : ''],
         ['Slaty', c ? c.pct.slaty + '%' : ''],
+        ['Designations', (r.designations || []).join(', ')],
         ['Bean count', b ? b.count + ' per 100 g' : ''],
       ];
     })(),

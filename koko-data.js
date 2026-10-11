@@ -11,6 +11,31 @@ const KOKO_SRC = {
     'De Vuyst and Weckx (2016), The cocoa bean fermentation process: from ecosystem analysis to starter culture development, Journal of Applied Microbiology 121: 5 to 17',
     'https://doi.org/10.1111/jam.13045',
   ],
+  ANNEXC: [
+    'ICCO, Revision of Annex C of the International Cocoa Agreement (October 2023)',
+    'https://www.icco.org/revision-of-annex-c-of-the-international-cocoa-agreement-ica-2010-2/',
+  ],
+  HCP: ['Heirloom Cacao Preservation Fund, FAQs', 'https://www.hcpcacao.org/hcp-faqs.html'],
+  STR: [
+    'Streule et al. (2024), Effect of pod storage on bean quality of Cacao Nacional, Foods 13: 1536',
+    'https://digitalcollection.zhaw.ch/bitstream/11475/30794/2/2024_Streule-etal_Effect-pod-storage-bean-quality-cacao-ecuador_foods.pdf',
+  ],
+  ESK: [
+    'Eskes et al. (2012), Effect of the cocoa pulp flavour environment during fermentation on chocolate flavour, 17th International Cocoa Research Conference',
+    'https://agritrop.cirad.fr/568108',
+  ],
+  PENA: [
+    'Peña González et al. (2023), Controlled fermentation of CCN-51 with fruits and on-farm inoculation, Brazilian Journal of Food Technology 26',
+    'https://doaj.org/article/9eaf9e6a05944773acc8d11824459c00',
+  ],
+  CHUAO: [
+    'WIPO, The success of Chuao cocoa bean',
+    'https://www.wipo.int/en/web/ip-advantage/w/stories/branding-matters-the-success-of-chuao-cocoa-bean',
+  ],
+  EUDR: [
+    'EFI, EUDR geolocation factsheet for cocoa (2026)',
+    'https://efi.int/sites/default/files/files/flegtredd/Sustainable-cocoa-programme/Factsheets/Geolocation_FactSheet-2026.pdf',
+  ],
   ICCOP: ['ICCO, Processing cocoa', 'https://www.icco.org/processing-cocoa/'],
   ISO: [
     'ISO 2451:2017 Cocoa beans (as TCVN 7519:2020)',
@@ -416,3 +441,169 @@ const WORLD = {
     'Pulp and husk can be income too: pulp juice, jam, cocoa honey, wine, and chocolate made by co-operatives.',
   ],
 };
+
+// ---------- fermentation protocols (pick one on a new run; each says how strong its evidence is) ----------
+// level: 'Standard' (research institute or ICCO guidance), 'Practice' (documented farm practice),
+// 'Trial' (one or two peer-reviewed studies), 'Experimental' (conference or lab work; tell buyers).
+const PROTOCOLS = [
+  {
+    name: 'Box, 6 days (CPCRI)',
+    level: 'Standard',
+    method: 'Box',
+    precond: 'None',
+    starter: 'None',
+    src: 'CPCRI',
+    steps: [
+      'Box about 45 × 30 × 20 cm with drain holes, 15 to 20 kg wet beans.',
+      'Cover with banana leaves, a lid and a jute bag.',
+      'Turn every other day; the mass reaches 42 to 48 °C after about 48 hours.',
+      'End at 6 days (144 hours), then dry on raised beds to about 7.5%.',
+    ],
+  },
+  {
+    name: 'Box cascade, daily turns',
+    level: 'Practice',
+    method: 'Box cascade',
+    precond: 'None',
+    starter: 'None',
+    src: 'REV',
+    steps: [
+      'A line of slatted boxes.',
+      'Move the beans to the next box each day, or turn at 48 and 96 hours as in Trinidad.',
+      '6 to 8 days in all.',
+      'Sun dry with regular turning, away from smoke.',
+    ],
+  },
+  {
+    name: 'Heap, 5 to 7 days',
+    level: 'Practice',
+    method: 'Heap',
+    precond: 'None',
+    starter: 'None',
+    src: 'REV',
+    steps: [
+      'Pile the wet beans on banana leaves and cover with more leaves.',
+      'Turn during the 5 to 7 days for an even fermentation.',
+      'Dry on raised platforms with mats, about six days of sun in Ghana.',
+    ],
+  },
+  {
+    name: 'Short, for Criollo-type beans',
+    level: 'Standard',
+    method: 'Box',
+    precond: 'None',
+    starter: 'None',
+    src: 'ICCO',
+    steps: [
+      'Criollo-type beans need only 2 to 3 days; Forastero types about 5.',
+      'Watch the cut test: stop when most beans are brown inside.',
+    ],
+  },
+  {
+    name: 'Pod storage, then box',
+    level: 'Trial',
+    method: 'Box',
+    precond: 'Pods stored before opening',
+    starter: 'None',
+    src: 'STR',
+    steps: [
+      'Keep picked pods 3 to 5 days under the trees before opening (pods lose about 8 to 13% weight).',
+      'Stored pods warmed faster (about 43 °C against 39 °C in the first two days) and changed colour 1 to 2 days sooner.',
+      'Effects on final bean quality were small in this one study; test on your own beans.',
+      'Never go past 7 to 10 days from picking to opening (ICCO).',
+    ],
+  },
+  {
+    name: 'Starter yeast (LALCOCOA)',
+    level: 'Practice',
+    method: 'Box',
+    precond: 'None',
+    starter: 'LALCOCOA FORTE',
+    src: 'LAL',
+    steps: [
+      '2 g dry yeast per kg of beans, stirred into 10 times its weight of clean water at 15 to 37 °C for 20 to 30 minutes.',
+      'Pour in gradually while filling the box.',
+      'Turn as usual; at most 8 days.',
+      "Maker's claims: faster warming, fewer purple beans, more cocoa or fruit notes. Compare against a box without yeast.",
+    ],
+  },
+  {
+    name: 'Fruit co-fermentation (experimental)',
+    level: 'Experimental',
+    method: 'Box',
+    precond: 'Some pulp drained or pressed',
+    starter: 'None',
+    src: 'ESK',
+    steps: [
+      'Studies added aromatic fruit pulp (cupuaçu, soursop) or replaced the cocoa pulp with passion fruit and plantain pulp.',
+      'The fruit aroma passed into the chocolate; a consumer panel in France liked it (conference work, 2012). A 2023 lab study measured the chemistry but not the taste.',
+      'Note the fruit and amount on the run. Tell buyers: some will treat this as a flavoured cocoa.',
+    ],
+  },
+];
+
+// ---------- designations and claims a lot can carry ----------
+const DESIGNATIONS = [
+  [
+    'Fine or flavour origin',
+    'ICCO Annex C lists countries whose exports are wholly or partly fine or flavour cocoa (October 2023: for example Ecuador 75%, Madagascar and Trinidad 100%). India is not listed. It is a country listing, not a test of your lot.',
+    'ANNEXC',
+  ],
+  [
+    'Heirloom Cacao (HCP)',
+    "The Heirloom Cacao Preservation Fund (with USDA and the Fine Chocolate Industry Association) checks genetics and flavour of a farm's samples before naming it Heirloom.",
+    'HCP',
+  ],
+  [
+    'Geographical indication',
+    'A protected place name, such as the Chuao appellation of origin in Venezuela (2000): only beans and products from the defined area may use the name.',
+    'CHUAO',
+  ],
+  [
+    'Organic',
+    'A certification by an accredited body; keep its certificate number and scope with the lot.',
+    '',
+  ],
+  ['Fairtrade', "A certification; keep the certificate and the buyer's premium terms with the lot.", ''],
+  ['Rainforest Alliance', 'A certification; keep the certificate with the lot.', ''],
+  [
+    'Single estate',
+    'All beans from one farm; Koko shows it when every block in the lot belongs to one farm.',
+    '',
+  ],
+  ['Fermented with starter', 'Say so when a starter yeast was used.', ''],
+  ['Co-fermented with fruit', 'Say so and name the fruit.', ''],
+];
+
+// EU deforestation rule: each plot needs a GPS point; plots over 4 ha need an outline (polygon), with
+// six decimal places; land must not have been cleared after 31 December 2020. Large operators
+// apply it from 31 December 2026 (EFI factsheet, 2026).
+function eudrCheck(plots) {
+  const ha = p => {
+    if (Array.isArray(p.geo) && p.geo.length > 2) return polyHa(p.geo);
+    const a = +p.area;
+    return a ? a * 0.404686 : null;
+  };
+  return plots.map(p => {
+    const poly = Array.isArray(p.geo) && p.geo.length > 2,
+      pt = !!((+p.lat && +p.lng) || poly),
+      h = ha(p);
+    const need = h != null && h > 4 ? 'outline' : 'point';
+    const ok = need === 'outline' ? poly : pt;
+    return { name: p.name || 'Block', ha: h != null ? Math.round(h * 100) / 100 : null, need, ok };
+  });
+}
+// Area of a lat/lng outline in hectares (small areas, flat-earth approximation).
+function polyHa(g) {
+  const R = 6371008.8,
+    rad = Math.PI / 180,
+    lat0 = (g.reduce((a, x) => a + +x[0], 0) / g.length) * rad;
+  const xy = g.map(x => [+x[1] * rad * R * Math.cos(lat0), +x[0] * rad * R]);
+  let a = 0;
+  for (let i = 0; i < xy.length; i++) {
+    const [x1, y1] = xy[i],
+      [x2, y2] = xy[(i + 1) % xy.length];
+    a += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(a) / 2 / 10000;
+}

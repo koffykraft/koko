@@ -53,6 +53,8 @@ const TABS = [
   ['clones', 'Varieties'],
   ['world', 'Around the world'],
   ['standards', 'Grades'],
+  ['protocols', 'Protocols'],
+  ['designations', 'Designations'],
 ];
 const JOURNEY = [
   [
@@ -213,9 +215,46 @@ function standards() {
     '</div></div>'
   );
 }
+function protocols() {
+  return (
+    '<div class="sub">Ways to ferment, from the standard box to experiments. Each is marked by how strong its evidence is: Standard (research institute or ICCO), Practice (documented on farms), Trial (a peer-reviewed study), Experimental (conference or lab work). Pick one on a new fermentation run on the Farm page.</div>' +
+    PROTOCOLS.map(
+      p =>
+        '<div class="card"><b>' +
+        esc(p.name) +
+        '</b> <span class="tag' +
+        (p.level === 'Standard' ? ' ok' : p.level === 'Experimental' ? ' bad' : ' wait') +
+        '">' +
+        p.level +
+        '</span><ol style="margin:6px 0 0 18px;padding:0;line-height:1.5">' +
+        p.steps.map(x => '<li>' + esc(x) + '</li>').join('') +
+        '</ol><div class="mini" style="margin-top:4px">' +
+        srcLink(p.src) +
+        (p.src === 'ESK' ? ' · ' + srcLink('PENA') : '') +
+        '</div></div>'
+    ).join('')
+  );
+}
+function designations() {
+  return (
+    '<div class="sub">Names and claims a lot of beans can carry, and what each one rests on. Tick them on a dry bean lot; they go into its passport.</div>' +
+    DESIGNATIONS.map(
+      ([n, d, s]) =>
+        '<div class="card"><b>' +
+        esc(n) +
+        '</b><div class="mini" style="margin-top:4px">' +
+        esc(d) +
+        (s ? ' ' + srcLink(s) : '') +
+        '</div></div>'
+    ).join('') +
+    '<div class="card"><b>EU deforestation rule (EUDR)</b><div class="mini" style="margin-top:4px">Cocoa sold into the EU needs the location of every plot: a GPS point, or a drawn outline for plots over 4 hectares, with six decimal places, and proof of no forest clearing after 31 December 2020. Large operators apply it from 31 December 2026, small ones from mid-2027. Koko checks each lot\'s blocks for you; draw outlines on the Map. ' +
+    srcLink('EUDR') +
+    '</div></div>'
+  );
+}
 function route() {
   const on = (location.hash.slice(1) || 'journey').split('/')[0];
-  const body = { journey, care, clones, world, standards }[on] || journey;
+  const body = { journey, care, clones, world, standards, protocols, designations }[on] || journey;
   $('#view').innerHTML = '<h1>Learn</h1>' + tabs(TABS.some(t => t[0] === on) ? on : 'journey') + body();
 }
 window.addEventListener('hashchange', route);

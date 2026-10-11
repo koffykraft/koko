@@ -71,6 +71,9 @@ export async function run(root, t) {
       await q.check('#form [data-links="plotIds"] input'); await fill('pods', 900); await fill('wetKg', 90); await save();
       await q.goto(base + 'farm.html#new/process'); await q.waitForTimeout(400);
       await fill('code', 'F-1'); await q.check('#form [data-links="harvestIds"] input');
+      await q.selectOption('#form [data-k="protocol"]', 'Pod storage, then box');
+      if ((await q.inputValue('#form [data-k="method"]')) !== 'Box' || (await q.inputValue('#form [data-k="precond"]')) !== 'Pods stored before opening') throw new Error('protocol did not fill the method');
+      const pg = await q.$eval('#protoGuide', e => e.innerText); if (!pg.includes('Trial') || !pg.includes('Streule')) throw new Error('protocol guide: ' + pg);
       await q.selectOption('#form [data-k="method"]', 'Box'); await q.selectOption('#form [data-k="starter"]', 'LALCOCOA FORTE');
       await fill('wetKg', 90); await fill('start', '2026-10-01T08:00'); await fill('fermentEnd', '2026-10-07T08:00');
       await q.fill('[data-list="turns"] .lrow [data-c="temp"]', '46');
@@ -87,6 +90,8 @@ export async function run(root, t) {
       const cut = { brown: 250, partly: 30, purple: 10, slaty: 5, mouldy: 3, insect: 2, germ: 0, flat: 0 };
       for (const [k, v] of Object.entries(cut)) await q.fill('[data-cut="' + k + '"]', String(v));
       await fill('w300', 330);
+      await q.check('[data-checks="designations"] input[value="Single estate"]');
+      const dg = await q.$eval('#desigOut', e => e.innerText); if (!dg.includes('Block 1') || !dg.includes('GPS point, missing') || !dg.includes('31 December 2026')) throw new Error('EUDR: ' + dg);
       const c = await q.$eval('#cutOut', e => e.innerText); if (!c.includes('Grade I') || !c.includes('Good fermented')) throw new Error(c);
       const b = await q.$eval('#beanOut', e => e.innerText); if (!b.includes('91 beans per 100 g') || !b.includes('Standard')) throw new Error(b);
       await q.fill('[data-cut="slaty"]', '20');
@@ -137,7 +142,7 @@ export async function run(root, t) {
       const v = await q.innerText('#view'); if (!v.includes('70% Thumpassery') || !v.includes('7.5/10') || !v.includes('Smoky') || !v.includes('Cocoa 7')) throw new Error(v.slice(0, 300));
     });
     await t.acheck('Learn: every tab shows sourced content', async () => {
-      for (const [tab, want] of [['journey', 'De Vuyst'], ['care', 'tea mosquito'], ['clones', 'CCRP 1'], ['world', 'Papua New Guinea'], ['standards', 'Grade II']]) {
+      for (const [tab, want] of [['journey', 'De Vuyst'], ['care', 'tea mosquito'], ['clones', 'CCRP 1'], ['world', 'Papua New Guinea'], ['standards', 'Grade II'], ['protocols', 'Experimental'], ['designations', 'Annex C']]) {
         await q.goto(base + 'learn.html#' + tab); await q.waitForTimeout(250);
         const txt = (await q.innerText('#view')).toLowerCase(); if (!txt.includes(want.toLowerCase())) throw new Error(tab + ': ' + want);
       }
