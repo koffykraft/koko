@@ -78,10 +78,11 @@ export async function run(root, t) {
       await fill('wetKg', 90); await fill('start', '2026-10-01T08:00'); await fill('fermentEnd', '2026-10-07T08:00');
       await q.fill('[data-list="turns"] .lrow [data-c="temp"]', '46');
       await q.fill('[data-list="dryReads"] .lrow [data-c="moisture"]', '7.2');
-      await fill('dryKg', 33);
+      await fill('dryKg', 33); await fill('brix', 18);
+      await q.fill('[data-list="turns"] .lrow [data-c="brix"]', '12');
       const g = await q.$eval('#starterGuide', e => e.innerText); if (!g.includes('180 g yeast')) throw new Error('starter dose: ' + g);
       const m = await q.$eval('#methodGuide', e => e.innerText); if (!m.includes('42 to 48')) throw new Error('box guide');
-      const s = await q.$eval('#runOut', e => e.innerText); if (!s.includes('144 h') || !s.includes('peak 46') || !s.includes('dry enough') || !s.includes('36.7%')) throw new Error(s);
+      const s = await q.$eval('#runOut', e => e.innerText); if (!s.includes('144 h') || !s.includes('peak 46') || !s.includes('dry enough') || !s.includes('36.7%') || !s.includes('pulp 18 °Bx falling to 12 °Bx')) throw new Error(s);
       await save();
     });
     await t.acheck('Farm: dry lot cut test grades the lot and bean count classes it', async () => {
@@ -99,8 +100,18 @@ export async function run(root, t) {
       await q.fill('[data-cut="slaty"]', '5');
       await save();
       const lin = await q.$eval('#form', e => e.innerText); if (!lin.includes('Block 1') || !lin.includes('Thumpassery Estate')) throw new Error('lineage missing');
+      await q.click('#card'); await q.waitForSelector('#kkcard .pv img', { timeout: 5000 });
+      await q.evaluate(() => document.getElementById('kkcard').remove());
+      await q.goto(base + 'farm.html#lots'); await q.waitForTimeout(400);
+      const [dl] = await Promise.all([q.waitForEvent('download'), q.click('#csv')]);
+      const csv = fs.readFileSync(await dl.path(), 'utf8'); if (!csv.includes('Grade') || !csv.includes('KC-1') || !csv.includes('Grade I')) throw new Error('lot CSV: ' + csv.slice(0, 200));
+      await q.goto(base + 'farm.html#runs'); await q.waitForTimeout(400);
+      const [dl2] = await Promise.all([q.waitForEvent('download'), q.click('#csv')]);
+      if (!fs.readFileSync(await dl2.path(), 'utf8').includes('Pulp Brix at start')) throw new Error('run CSV without Brix');
     });
     await t.acheck('Farm: passport plan carries the whole chain with weights', async () => {
+      const lotId = await q.evaluate(async () => (await ORIGIN.all('green'))[0].id);
+      await q.goto(base + 'farm.html#edit/green/' + encodeURIComponent(lotId)); await q.waitForTimeout(500);
       await q.click('#pass'); await q.waitForTimeout(500);
       const plan = await q.evaluate(() => JSON.parse(sessionStorage.getItem('kk_trace_plan') || 'null'));
       if (!plan) throw new Error('no plan');
@@ -135,6 +146,8 @@ export async function run(root, t) {
       await save();
       await q.goto(base + 'bar.html'); await q.waitForTimeout(300);
       if (!(await q.innerText('#view')).includes('70% Thumpassery')) throw new Error('batch not listed');
+      const [dl3] = await Promise.all([q.waitForEvent('download'), q.click('#csv')]);
+      if (!fs.readFileSync(await dl3.path(), 'utf8').includes('74.1')) throw new Error('batch CSV');
       const cmp = await q.innerText('#view'); if (!/weight loss, batch by batch/i.test(cmp) || !cmp.includes('74.1%')) throw new Error('no batch comparison: ' + cmp.slice(-600));
     });
     await t.acheck('Taste: a tasting of the batch is saved with its profile', async () => {

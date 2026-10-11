@@ -246,6 +246,9 @@ function fermentSummary(r) {
   const lastM = dry.length ? +dry[dry.length - 1].moisture : null;
   const wet = +r.wetKg || null,
     out = +r.dryKg || null;
+  const bx = turns.map(t => +t.brix).filter(x => isFinite(x) && x > 0);
+  const brixStart = +r.brix > 0 ? +r.brix : bx.length ? bx[0] : null;
+  const brixLast = bx.length ? bx[bx.length - 1] : null;
   return {
     fermentHours: h(r.start, r.fermentEnd),
     turns: turns.length,
@@ -253,6 +256,8 @@ function fermentSummary(r) {
     dryDays: r.dryStart && r.dryEnd ? Math.round((new Date(r.dryEnd) - new Date(r.dryStart)) / 864e5) : null,
     moisture: lastM,
     recovery: wet && out ? Math.round((out / wet) * 1000) / 10 : null,
+    brixStart,
+    brixLast: brixLast != null && brixLast !== brixStart ? brixLast : null,
   };
 }
 

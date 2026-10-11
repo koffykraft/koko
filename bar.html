@@ -39,7 +39,7 @@
 <div id="view"></div>
 <div id="kf"></div>
 </main>
-<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script><script src="kk-units.js" defer></script>
+<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script><script src="sharecard.js"></script><script src="kk-units.js" defer></script>
 <script>
 // Bean to bar: one batch from dry beans to moulded bars. Stored as record type "batch".
 const $ = s => document.querySelector(s);
@@ -65,7 +65,11 @@ async function listView() {
   await load();
   $('#view').innerHTML =
     '<h1>Bean to bar</h1><div class="sub">One batch from dry beans to bars: roast, crack and winnow, grind and refine, conche, temper and mould. The sums (shell share, recipe weights, yield) are done for you.</div>' +
-    '<div class="row" style="margin:8px 0"><a class="btn cocoa" href="#new">＋ New batch</a></div>' +
+    '<div class="row" style="margin:8px 0"><a class="btn cocoa" href="#new">＋ New batch</a>' +
+    (BATCHES.length
+      ? '<button class="btn" id="csv">Export CSV</button><button class="btn" id="cards">Cards and PDF</button>'
+      : '') +
+    '</div>' +
     (BATCHES.length
       ? BATCHES.map(b => {
           const s = sums(b);
@@ -181,6 +185,67 @@ function compareHtml() {
     '</table><div class="mini" style="margin-top:6px">Roast: weight lost roasting. Shell: lost in cracking and winnowing. Machines: chocolate left in the melanger, temperer and moulds. Beans to bar: share of the dry bean weight that reached the chocolate as cocoa.</div></div>'
   );
 }
+// A share card (image or PDF page) for one batch.
+function batchCard(b) {
+  const c = batchChain(b),
+    r = recipe(b.nibsKg, b.pct || {});
+  return {
+    kind: 'Chocolate batch',
+    title: b.name || 'Batch',
+    sub: lotName(b.lotId) || b.beanSource || '',
+    date: fmtDate(b.date),
+    chips: [r.cocoa ? r.cocoa + '% cocoa' : '', b.chocType || ''].filter(Boolean),
+    rows: [
+      ['Dry beans in', c.beans ? c.beans + ' kg' : ''],
+      ['Roast', b.roastTemp ? b.roastTemp + ' °C, ' + (b.roastMin || '') + ' min' : ''],
+      ['Roast loss', c.roastLoss != null ? c.roastLoss + '%' : ''],
+      ['Shell loss', c.shellLoss != null ? c.shellLoss + '%' : ''],
+      [
+        'Refining, conching',
+        [b.refineH ? b.refineH + ' h' : '', b.concheH ? b.concheH + ' h' : ''].filter(Boolean).join(', '),
+      ],
+      ['Tempering', b.temperMethod || ''],
+      ['Chocolate out', c.out ? c.out + ' kg' : ''],
+      ['Beans to bar', c.beanToBar != null ? c.beanToBar + '% of the dry beans' : ''],
+      ['Bars', b.bars ? b.bars + (b.barG ? ' × ' + b.barG + ' g' : '') : ''],
+    ].filter(x => x[1]),
+    notes: b.notes || '',
+    loc: '',
+  };
+}
+document.addEventListener('click', e => {
+  if (e.target.id === 'cards') KKCARD.open(BATCHES.map(batchCard), { heading: 'Chocolate batches' });
+  if (e.target.id === 'csv')
+    saveCsv('koko-batches', BATCHES, [
+      ['name', 'Batch'],
+      ['date', 'Date'],
+      [b => lotName(b.lotId) || b.beanSource, 'Beans from'],
+      ['beansKg', 'Dry beans in kg'],
+      ['roaster', 'Roaster'],
+      ['roastTemp', 'Roast °C'],
+      ['roastMin', 'Roast minutes'],
+      ['winIn', 'Roasted beans kg'],
+      ['nibsKg', 'Nibs kg'],
+      [b => (b.pct || {}).nibs, 'Nibs %'],
+      [b => (b.pct || {}).butter, 'Added butter %'],
+      [b => (b.pct || {}).sugar, 'Sugar %'],
+      [b => (b.pct || {}).milk, 'Milk %'],
+      [b => (b.pct || {}).other, 'Other %'],
+      ['refineH', 'Refining h'],
+      ['concheH', 'Conching h'],
+      ['chocType', 'Chocolate'],
+      ['temperMethod', 'Tempering'],
+      ['outKg', 'Chocolate out kg'],
+      ['bars', 'Bars'],
+      ['barG', 'Bar g'],
+      [b => batchChain(b).roastLoss, 'Roast loss %'],
+      [b => batchChain(b).shellLoss, 'Shell loss %'],
+      [b => batchChain(b).processLoss, 'Machine loss %'],
+      [b => batchChain(b).beanToBar, 'Beans to bar %'],
+      [b => batchChain(b).beansPerKg, 'Dry beans per kg chocolate'],
+      ['notes', 'Notes'],
+    ]);
+});
 function tempGuide() {
   return (
     '<h2>Tempering temperatures</h2><div class="card"><table class="t"><tr><th></th><th>Melt</th><th>Cool to</th><th>Work at</th><th>Not above</th></tr>' +
@@ -315,8 +380,10 @@ async function editView(id, lotId) {
     '</div><div class="row bar"><button class="btn cocoa" id="save">Save</button>' +
     (id ? '<a class="btn" href="taste.html#batch/' + encodeURIComponent(id) + '">Taste it</a>' : '') +
     '<a class="btn" href="#">Cancel</a>' +
+    (id ? '<button class="btn" id="card">Image or PDF</button>' : '') +
     (id ? '<button class="btn danger" id="del" style="margin-left:auto">Delete</button>' : '') +
     '</div>';
+  if ($('#card')) $('#card').onclick = () => KKCARD.open([batchCard(CUR)], { heading: CUR.name || 'Batch' });
   $('#form').addEventListener('input', live);
   $('#form').addEventListener('change', live);
   live();

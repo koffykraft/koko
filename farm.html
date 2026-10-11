@@ -24,7 +24,7 @@
 }
 .lrow {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1.4fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
   gap: 6px;
   align-items: end;
   margin: 6px 0;
@@ -75,7 +75,7 @@
 <div id="view"></div>
 <div id="kf"></div>
 </main>
-<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script><script src="kk-units.js" defer></script>
+<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script><script src="sharecard.js"></script><script src="qrcode.js"></script><script src="kk-units.js" defer></script>
 <script>
 // Farm records: farms, blocks, pod harvests, fermentation and drying runs, dry bean lots.
 // Stored on this device (KokoRecords); when signed in, synced to your Koko account.
@@ -135,6 +135,7 @@ const FIELDS = {
     ['damagedPods', 'Pods holed by squirrels or rats', 'num'],
     ['podDays', 'Days pods kept before opening', 'num'],
     ['wetKg', 'Wet beans, kg', 'num'],
+    ['brix', 'Pulp Brix, °Bx', 'num'],
     ['notes', 'Notes', 'area'],
   ],
   process: [
@@ -150,6 +151,8 @@ const FIELDS = {
     ['fruit', 'Fruit or pulp added', 'text', { ph: 'None, or what and how much' }],
     ['start', 'Started', 'datetime-local'],
     ['wetKg', 'Wet beans in, kg', 'num'],
+    ['brix', 'Pulp Brix at start, °Bx', 'num'],
+    ['ph', 'Pulp pH at start', 'num'],
     ['turns', 'Turns and temperatures', 'turns'],
     ['fermentEnd', 'Fermentation ended', 'datetime-local'],
     ['sec', 'Drying'],
@@ -229,6 +232,7 @@ function facts(t, r) {
       r.protocol || r.method,
       s.fermentHours ? Math.round((s.fermentHours / 24) * 10) / 10 + ' days' : '',
       s.peak ? 'peak ' + s.peak + ' °C' : '',
+      s.brixStart != null ? s.brixStart + ' °Bx' : '',
       s.moisture != null ? s.moisture + '% moisture' : '',
       r.dryKg ? r.dryKg + ' kg dry' : ''
     );
@@ -286,6 +290,9 @@ async function listView(t) {
     tb[3].toLowerCase() +
     '</a>' +
     (t === 'estate' || t === 'plot' ? '<a class="btn" href="map.html">Map of farm and blocks</a>' : '') +
+    (rows.length
+      ? '<button class="btn" id="csv">Export CSV</button><button class="btn" id="cards">Cards and PDF</button>'
+      : '') +
     '</div>' +
     (rows.length
       ? rows
@@ -450,6 +457,8 @@ function fieldHtml(t, f, r) {
     return listEditor('turns', lab, r.turns, [
       ['at', 'Time', 'datetime-local'],
       ['temp', '°C', 'number'],
+      ['brix', '°Bx', 'number'],
+      ['ph', 'pH', 'number'],
       ['note', 'Note', 'text'],
     ]);
   if (ty === 'dryreads')
@@ -520,6 +529,8 @@ const COLS = {
   turns: [
     ['at', 'Time', 'datetime-local'],
     ['temp', '°C', 'number'],
+    ['brix', '°Bx', 'number'],
+    ['ph', 'pH', 'number'],
     ['note', 'Note', 'text'],
   ],
   dryReads: [
@@ -704,6 +715,9 @@ function live() {
             (s.moisture <= 7.5 ? ' (dry enough to export)' : s.moisture <= 8 ? ' (at the 8% limit)' : '')
           : '',
         s.recovery ? 'dry beans ' + s.recovery + '% of wet' : '',
+        s.brixStart != null
+          ? 'pulp ' + s.brixStart + ' °Bx' + (s.brixLast != null ? ' falling to ' + s.brixLast + ' °Bx' : '')
+          : '',
       ]
         .filter(Boolean)
         .join(' · ') || 'Times, turns and moisture readings show a summary here.';
@@ -804,8 +818,12 @@ async function editView(t, id) {
     '</div><div class="row bar"><button class="btn cocoa" id="save">Save</button><a class="btn" href="#' +
     tb[1] +
     '">Cancel</a>' +
+    (CUR ? '<button class="btn" id="card">Image or PDF</button>' : '') +
     (CUR ? '<button class="btn danger" id="del" style="margin-left:auto">Delete</button>' : '') +
     '</div>';
+  if ($('#card'))
+    $('#card').onclick = () =>
+      KKCARD.open([shareCard(t, CUR)], { heading: title(t, CUR), brand: brandOf(t, CUR) });
   const form = $('#form');
   form.addEventListener('input', live);
   form.addEventListener('change', e => {
@@ -882,6 +900,7 @@ function card(t, r) {
       ['Pods', r.pods],
       ['Black pod', r.blackPods],
       ['Wet beans', r.wetKg ? r.wetKg + ' kg' : ''],
+      ['Pulp Brix', r.brix ? r.brix + ' °Bx' : ''],
       ['Pods kept', r.podDays ? r.podDays + ' days' : ''],
     ],
     process: (() => {
@@ -892,6 +911,11 @@ function card(t, r) {
         ['Starter yeast', r.starter && r.starter !== 'None' ? r.starter : ''],
         ['Fruit added', r.fruit],
         ['Wet beans in', r.wetKg ? r.wetKg + ' kg' : ''],
+        [
+          'Pulp Brix',
+          s.brixStart != null ? s.brixStart + ' °Bx' + (s.brixLast != null ? ' to ' + s.brixLast : '') : '',
+        ],
+        ['Pulp pH', r.ph],
         ['Fermentation', s.fermentHours ? s.fermentHours + ' h' : ''],
         ['Turns', s.turns || ''],
         ['Peak', s.peak ? s.peak + ' °C' : ''],
@@ -985,6 +1009,63 @@ function route() {
   if ((m = h.match(/^edit\/(\w+)\/(.+)$/)) && FIELDS[m[1]]) return editView(m[1], decodeURIComponent(m[2]));
   const tb = TABS.find(x => x[1] === h);
   listView(tb ? tb[0] : 'estate');
+}
+// Export and share from a list: one CSV of the tab, or cards (images, PDF) of every record in it.
+document.addEventListener('click', e => {
+  const id = e.target.id;
+  if (id !== 'csv' && id !== 'cards') return;
+  const tb = TABS.find(x => x[1] === location.hash.slice(1)) || TABS[0];
+  const t = tb[0],
+    rows = DB[t] || [];
+  if (id === 'cards')
+    return KKCARD.open(
+      rows.map(r => shareCard(t, r)),
+      { heading: tb[2], brand: (DB.estate[0] || {}).name }
+    );
+  const plain = FIELDS[t].filter(f =>
+    ['text', 'num', 'date', 'select', 'datetime-local', 'clone', 'area', 'link'].includes(f[2])
+  );
+  const cols = [[r => title(t, r), 'Record']].concat(
+    plain.map(f => [f[2] === 'link' ? r => title(f[3].type, byId(f[3].type, r[f[0]])) : f[0], f[1]])
+  );
+  if (t === 'estate' || t === 'plot') cols.push(['lat', 'Latitude'], ['lng', 'Longitude']);
+  if (t === 'plot') cols.push([r => density(r), 'Trees per ha']);
+  if (t === 'harvest')
+    cols.push([r => (r.plotIds || []).map(x => (byId('plot', x) || {}).name).filter(Boolean), 'Blocks']);
+  if (t === 'process')
+    cols.push(
+      [r => (r.harvestIds || []).map(x => title('harvest', byId('harvest', x))), 'Pickings'],
+      [r => fermentSummary(r).fermentHours, 'Fermentation hours'],
+      [r => fermentSummary(r).turns, 'Turns'],
+      [r => fermentSummary(r).peak, 'Peak °C'],
+      [r => fermentSummary(r).brixLast, 'Last pulp °Bx'],
+      [r => fermentSummary(r).moisture, 'Last moisture %'],
+      [r => fermentSummary(r).recovery, 'Dry as % of wet']
+    );
+  if (t === 'green')
+    cols.push(
+      [r => (cutTest(r.cut) || {}).grade, 'Grade'],
+      [r => (cutTest(r.cut) || {}).ferm, 'Fermentation'],
+      [r => (cutTest(r.cut) || {}).brown, 'Fully brown %'],
+      [r => ((cutTest(r.cut) || {}).pct || {}).slaty, 'Slaty %'],
+      [r => (beanCount(r.per100, r.w300) || {}).count, 'Beans per 100 g'],
+      ['designations', 'Designations']
+    );
+  saveCsv('koko-' + tb[1], rows, cols);
+});
+function shareCard(t, r) {
+  const c = card(t, r);
+  return {
+    ...c,
+    chips: t === 'green' && cutTest(r.cut) ? [cutTest(r.cut).grade] : [],
+    qr: t === 'green' && r.traceToken ? location.origin + '/trace.html#p/' + r.traceToken : '',
+  };
+}
+function brandOf(t, r) {
+  if (t === 'estate') return r.name;
+  if (t === 'plot') return (byId('estate', r.estateId) || {}).name;
+  if (t === 'green') return (lineage(r).estates[0] || {}).name;
+  return (DB.estate[0] || {}).name;
 }
 window.addEventListener('hashchange', route);
 ORIGIN.onSync(s => {

@@ -69,7 +69,7 @@
 <div id="view"></div>
 <div id="kf"></div>
 </main>
-<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script>
+<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script><script src="sharecard.js"></script>
 <script>
 // Tasting: cocoa liquor, nibs or chocolate, scored 0 to 10 on the usual cocoa attributes.
 const $ = s => document.querySelector(s);
@@ -100,11 +100,50 @@ function profile(t) {
         '</div>'
     : '';
 }
+function tasteCard(t) {
+  const a = t.attrs || {};
+  return {
+    kind: 'Tasting',
+    title: subj(t),
+    sub: [t.form, t.taster].filter(Boolean).join(' · '),
+    date: fmtDate(t.date),
+    chips: [t.overall !== '' && t.overall != null ? t.overall + '/10' : '']
+      .concat(t.off || [])
+      .filter(Boolean),
+    rows: TASTE_ATTRS.filter(([k]) => +a[k] > 0).map(([k, l]) => [l, a[k] + ' / 10']),
+    notes: t.notes || '',
+    loc: '',
+  };
+}
+document.addEventListener('click', e => {
+  if (e.target.id === 'cards') KKCARD.open(D.tasting.map(tasteCard), { heading: 'Tastings' });
+  if (e.target.id === 'csv')
+    saveCsv(
+      'koko-tastings',
+      D.tasting,
+      [
+        [t => subj(t), 'Tasted'],
+        ['date', 'Date'],
+        ['form', 'What'],
+        ['taster', 'Taster'],
+      ]
+        .concat(TASTE_ATTRS.map(([k, l]) => [t => (t.attrs || {})[k], l]))
+        .concat([
+          ['off', 'Off-flavours'],
+          ['overall', 'Overall'],
+          ['notes', 'Notes'],
+        ])
+    );
+});
 async function listView() {
   await load();
   $('#view').innerHTML =
     '<h1>Taste</h1><div class="sub">Score cocoa liquor, nibs or chocolate from 0 (none) to 10 (very strong) on the usual cocoa attributes, and note any off-flavours. Taste the same lot after each change in fermentation or roast to learn what moved.</div>' +
-    '<div class="row" style="margin:8px 0"><a class="btn cocoa" href="#new">＋ New tasting</a></div>' +
+    '<div class="row" style="margin:8px 0"><a class="btn cocoa" href="#new">＋ New tasting</a>' +
+    (D.tasting.length
+      ? '<button class="btn" id="csv">Export CSV</button><button class="btn" id="cards">Cards and PDF</button>'
+      : '') +
+    '</div>' +
     (D.tasting.length
       ? D.tasting
           .map(
@@ -221,8 +260,10 @@ async function editView(id, pre) {
     esc(CUR.notes || '') +
     '</textarea></label></div>' +
     '<div class="row bar"><button class="btn cocoa" id="save">Save</button><a class="btn" href="#">Cancel</a>' +
+    (id ? '<button class="btn" id="card">Image or PDF</button>' : '') +
     (id ? '<button class="btn danger" id="del" style="margin-left:auto">Delete</button>' : '') +
     '</div>';
+  if ($('#card')) $('#card').onclick = () => KKCARD.open([tasteCard(CUR)], { heading: subj(CUR) });
   document
     .querySelectorAll('[data-a]')
     .forEach(

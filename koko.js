@@ -47,6 +47,23 @@ const fmtDate = d => {
     ? String(d)
     : x.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 };
+// Save rows as a CSV file that opens in Excel or Google Sheets. cols: [[key or function, heading]]
+function saveCsv(name, rows, cols) {
+  const cell = v => {
+    const t = v == null ? '' : Array.isArray(v) ? v.join('; ') : String(v);
+    return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  };
+  const lines = [cols.map(c => cell(c[1])).join(',')].concat(
+    rows.map(r => cols.map(([k]) => cell(typeof k === 'function' ? k(r) : r[k])).join(','))
+  );
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv' }));
+  a.download = name + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => (URL.revokeObjectURL(a.href), a.remove()), 4000);
+  toast('Saved ' + a.download);
+}
 const today = () => new Date().toISOString().slice(0, 10);
 document.addEventListener('DOMContentLoaded', () => {
   kokoHeader(document.body.dataset.page || '');
