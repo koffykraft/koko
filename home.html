@@ -1,0 +1,107 @@
+<!doctype html>
+<!-- KoffyKraft (C) 2026 T M Thomas. AGPL-3.0 with additional terms (attribution, names): see NOTICE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f3ee">
+<meta name="description" content="Free tools for cocoa growers and chocolate makers: farm records, fermentation, cut test and grade, bean to bar, tasting, trails and lot passports.">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Koko by KoffyKraft</title>
+<link rel="stylesheet" href="koko.css">
+<style>
+.hero {
+  background: linear-gradient(135deg, #3b1d12, #7a3e26 60%, #b5651d);
+  color: #fff;
+  border-radius: 22px;
+  padding: 26px 20px;
+  margin: 6px 0 14px;
+}
+.hero h1 {
+  font-size: 34px;
+  margin: 0 0 8px;
+  color: #fff;
+}
+.hero p {
+  margin: 0;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.tile {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.tile b {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.tile span {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.count {
+  float: right;
+  font-size: 12px;
+  color: var(--cocoa);
+  font-weight: 700;
+}
+@media (max-width: 380px) {
+  .tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>
+<link rel="stylesheet" href="kk.css"><script src="tap.js" defer></script><script src="kk-base.js"></script>
+</head>
+<body data-page="home"><main class="app">
+<header id="kh"></header>
+<div class="hero"><h1>Cocoa, from tree to bar.</h1><p>Free tools for cocoa growers and chocolate makers. Keep records of your blocks, pickings, fermentation and drying, grade your beans with a cut test, log every chocolate batch, taste with a proper form, and follow each lot back to the tree.</p></div>
+<div id="who" class="card mini"></div>
+<div class="tiles">
+<a class="tile" href="farm.html#farms"><span class="count" id="c-estate"></span><b>Farm</b><span>Farms, blocks and clones, shade and spacing.</span></a>
+<a class="tile" href="farm.html#harvests"><span class="count" id="c-harvest"></span><b>Pod harvests</b><span>Pods, rotten pods, wet bean weight.</span></a>
+<a class="tile" href="farm.html#runs"><span class="count" id="c-process"></span><b>Fermentation and drying</b><span>Turns, temperatures, moisture readings.</span></a>
+<a class="tile" href="farm.html#lots"><span class="count" id="c-green"></span><b>Dry bean lots</b><span>Cut test, bean count and grade.</span></a>
+<a class="tile" href="bar.html"><span class="count" id="c-batch"></span><b>Bean to bar</b><span>Roast, winnow, recipe, conche, temper.</span></a>
+<a class="tile" href="taste.html"><span class="count" id="c-tasting"></span><b>Taste</b><span>Liquor and chocolate tasting, 0 to 10.</span></a>
+<a class="tile" href="trail.html"><b>Trails</b><span>Walk the farm, record the path, add photos. Kept on your device.</span></a>
+<a class="tile" href="trace.html"><b>Lot passports</b><span>Signed records and a QR for buyers.</span></a>
+<a class="tile" href="learn.html#care"><b>Crop care</b><span>Black pod, tea mosquito bug, squirrels and more.</span></a>
+<a class="tile" href="learn.html"><b>Learn</b><span>Pod to bar, varieties, grades, cocoa around the world.</span></a>
+</div>
+<div class="card mini" style="margin-top:14px">Free, with no ads. Works on your phone, even without signal. Your records stay on this phone unless you sign in to sync them. Advice is a guide, not a guarantee; every tip names its source. Made in Kerala.</div>
+<div id="kf"></div>
+</main>
+<script src="koko.js"></script><script src="sync.js"></script><script src="origin-db.js"></script>
+<script>
+(async () => {
+  const who = document.getElementById('who');
+  who.innerHTML = SYNC.isAuthenticated()
+    ? 'Signed in as <b>' +
+      esc(SYNC.getUserEmail() || '') +
+      '</b>. Your records sync to your Koko account. <a href="account.html">Account</a>'
+    : 'Not signed in: records stay on this phone. <a href="account.html">Sign in</a> to keep them in your Koko account and use them on other devices.';
+  try {
+    const d = await ORIGIN.allTypes(['estate', 'harvest', 'process', 'green', 'batch', 'tasting']);
+    for (const k in d) {
+      const el = document.getElementById('c-' + k);
+      if (el && d[k].length) el.textContent = d[k].length;
+    }
+  } catch (e) {}
+})();
+</script>
+<script src="pv.js" defer></script>
+</body>
+</html>

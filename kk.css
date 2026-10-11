@@ -1,0 +1,74 @@
+/* KoffyKraft shared layout fixes and header.
+   Loaded after each page's own styles so these rules win. */
+:root{--kk-bg:#f7f5f0;--kk-ink:#171512;--kk-muted:#77716a;--kk-line:#ddd8d0;--kk-coffee:#8d583b}
+[hidden]{display:none!important}
+html,body{max-width:100%;overflow-x:hidden}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--kk-bg);color:var(--kk-ink);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+img,svg,canvas,video{max-width:100%;height:auto}
+
+/* Form controls: 16px stops iPhone Safari zooming in on focus;
+   min-width:0 lets them shrink inside grid and flex columns. */
+input,select,textarea{font-size:16px !important;max-width:100%;min-width:0}
+input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{width:100%}
+select{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+input[type=date],input[type=time],input[type=datetime-local],input[type=month]{-webkit-appearance:none;appearance:none;display:block;min-width:0;min-height:44px;text-align:left;background-color:#fff;color:inherit}
+input::-webkit-date-and-time-value{text-align:left;margin:0}
+input::-webkit-datetime-edit{padding:0}
+
+/* Two-column form grids: columns may never grow past half the screen. */
+.f,.grid,.grid2,.filters,.row2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.f>*,.grid>*,.grid2>*,.filters>*,.lrow>*,.unitwrap>*,.row>*{min-width:0}
+.unitwrap select{width:auto;flex:0 0 auto;max-width:45%}
+.row input[type=number]{flex:1 1 0}
+
+/* Shared header: brand + account on one row, menu on its own row. */
+header.kkh{display:block;margin:0 0 18px;padding:6px 0 0;border-bottom:1px solid var(--kk-line);gap:0}
+.kkh-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.kkh-brand{font-size:19px;font-weight:300;letter-spacing:1px;color:var(--kk-ink);text-decoration:none;white-space:nowrap}
+.kkh-acct{width:40px;height:40px;border:1px solid var(--kk-line);border-radius:50%;display:grid;place-items:center;text-decoration:none;font-size:18px;flex-shrink:0;background:#fff}
+nav.kkh-nav{display:flex;flex:none;justify-content:space-between;font-size:14px;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:6px -4px 0;padding:0 0 8px}
+.kkh-nav::-webkit-scrollbar{display:none}
+.kkh-nav a{flex:0 0 auto;padding:8px 7px;border-radius:999px;font-size:14px;color:var(--kk-ink);text-decoration:none;white-space:nowrap}
+.kkh-nav a[aria-current=page]{background:var(--kk-ink);color:#fff;font-weight:600}
+.kkh-sub{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 6px}
+.kkh-sub h1{margin:0}
+.kkh-sub a{font-size:14px;color:var(--kk-coffee);text-decoration:none;white-space:nowrap}
+@media(max-width:380px){.kkh-nav a{padding:8px 5px;font-size:13.5px}}
+/* Cloud location tags and controls */
+.loc{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:#f0ebe4;color:#77716a}
+.loc.in{background:#e3eee8;color:#3f6b5a}
+.tag.loc{border:0}
+.cloudrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--kk-line);border-radius:12px;padding:8px 10px;margin:0 0 14px}
+.cloudrow .loc{font-size:12px;padding:5px 10px}
+.cl-link{font-size:13px;color:var(--kk-coffee)}
+.cl-check{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;white-space:nowrap;padding:0 4px}
+.cl-check input{width:20px;height:20px}
+
+/* Share to a space: visible pill under a record's title */
+.sharebtn{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border:1px solid var(--kk-coffee);color:var(--kk-coffee)!important;background:#fff;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px;text-decoration:none}
+.sharebtn::before{content:'';width:14px;height:14px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='18' cy='5' r='3'/%3E%3Ccircle cx='6' cy='12' r='3'/%3E%3Ccircle cx='18' cy='19' r='3'/%3E%3Cpath d='M8.6 13.5l6.8 4M15.4 6.5l-6.8 4'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='18' cy='5' r='3'/%3E%3Ccircle cx='6' cy='12' r='3'/%3E%3Ccircle cx='18' cy='19' r='3'/%3E%3Cpath d='M8.6 13.5l6.8 4M15.4 6.5l-6.8 4'/%3E%3C/svg%3E") center/contain no-repeat}
+
+/* Tap comfort: pill buttons and chips at least 36 px tall, brand link a full thumb's height */
+.kkh-brand{padding:11px 0}
+.links a,#fbK button,.row>button,.btn.small,.chips button,.chip,.probe-choice button,.unit-choice button{min-height:36px}
+.option-toggle{min-height:40px;display:inline-flex;align-items:center;gap:8px}
+.option-toggle input[type=checkbox]{width:22px;height:22px;min-height:0}
+
+/* One button shape everywhere. Pages keep their own colours (a dark main action stays dark);
+   these rules only set shape, size and type so every page feels the same. */
+:where(main a:not([class]), .app a:not([class])) { color: var(--kk-coffee); }
+body .btn, body .pick, body label.btn {
+  font-family: inherit; font-size: 14px; font-weight: 600; line-height: 1.2;
+  border-radius: 999px; padding: 9px 15px; min-height: 40px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  text-decoration: none; cursor: pointer; vertical-align: middle;
+}
+body .btn.small { font-size: 13px; padding: 7px 12px; min-height: 36px; }
+body .pick { border: 1px solid var(--kk-line); background: #fff; color: var(--kk-ink); border-radius: 14px; min-height: 48px; width: 100%; }
+body .pick:active, body .btn:active { transform: translateY(1px); }
+a.kk-plain { display: inline-flex; align-items: center; min-height: 40px; color: var(--kk-coffee); font-weight: 600; text-decoration: none; }
+/* Account button: a plain line icon in the ink colour instead of the blue emoji */
+.kkh-acct { font-size: 0 !important; color: var(--kk-ink); }
+.kkh-acct::before { content: ''; width: 20px; height: 20px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6'/%3E%3C/svg%3E") center/contain no-repeat; }

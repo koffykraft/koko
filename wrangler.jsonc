@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "koko",
+  "compatibility_date": "2026-09-21",
+  "observability": { "enabled": true },
+  "main": "worker.js",
+  "triggers": { "crons": ["40 18 * * *"] },
+  "vars": {
+    "AUTH_EMAIL_FROM": "Koko by KoffyKraft <signin@koffykraft.coffee>",
+    "ADMIN_EMAILS": "thomas@thumpassery.com,info@tagro.in"
+  },
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "koko",
+      "database_id": "0683798c-9144-431d-85f4-5495c2807257"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "koffykraft-workbook",
+  "private": true,
+  "license": "SEE LICENSE IN NOTICE",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "test:fast": "node tests/run.mjs static lint api",
+    "deploy": "bash scripts/deploy.sh"
+  },
+  "devDependencies": {
+    "eslint": "^9.13.0",
+    "globals": "^15.11.0",
+    "playwright": "^1.48.0",
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}

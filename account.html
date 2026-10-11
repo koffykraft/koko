@@ -1,0 +1,152 @@
+<!doctype html>
+<!-- KoffyKraft (C) 2026 T M Thomas. AGPL-3.0 with additional terms (attribution, names): see NOTICE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f3ee">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Koko Account</title>
+<link rel="stylesheet" href="koko.css">
+<link rel="stylesheet" href="kk.css"><script src="tap.js" defer></script><script src="kk-base.js"></script>
+</head>
+<body data-page="account"><main class="app">
+<header id="kh"></header>
+<h1>Account</h1>
+<div id="upd" class="card" hidden><b>A newer version is ready.</b> <button class="btn small cocoa" id="updGo">Reload</button></div>
+<div id="view"></div>
+<h2>Your data</h2>
+<div class="card"><div class="mini">Save a copy of every record on this phone (farms, blocks, pickings, fermentation runs, lots, batches, tastings) as one file, and keep it in Files, Drive or Dropbox. Open it again here to restore.</div><div class="row" style="margin-top:8px"><button class="btn small" id="exp">Save all records (.json)</button><label class="btn small" style="cursor:pointer">Open a saved file<input id="imp" type="file" accept=".json,application/json" hidden></label></div></div>
+<h2>Tell us</h2>
+<div class="card"><div class="mini">What works, what is missing, what went wrong. Leave a contact only if you want a reply.</div><textarea id="fbT" style="width:100%;margin-top:8px" placeholder="Your message"></textarea><input id="fbC" style="width:100%;margin-top:6px" placeholder="Email or phone (optional)"><div class="row" style="margin-top:8px"><button class="btn small" id="fbS">Send</button></div></div>
+<div id="kf"></div>
+</main>
+<script src="koko.js"></script><script src="sync.js"></script><script src="origin-db.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let email = '';
+function draw(state) {
+  const v = $('#view');
+  if (SYNC.isAuthenticated()) {
+    v.innerHTML =
+      '<div class="card"><b>Signed in</b><div class="mini">' +
+      esc(SYNC.getUserEmail() || '') +
+      '</div><div class="mini" id="st" style="margin-top:6px">' +
+      esc(state || 'Records on this phone sync to your Koko account.') +
+      '</div><div class="row" style="margin-top:8px"><button class="btn small cocoa" id="sync">Sync now</button><button class="btn small" id="out">Sign out</button></div></div>';
+    $('#sync').onclick = () =>
+      ORIGIN.sync()
+        .then(n => toast('Synced' + (n ? ', ' + n + ' new' : '')))
+        .catch(e => toast(e.message));
+    $('#out').onclick = async () => {
+      await SYNC.logout();
+      draw();
+    };
+    return;
+  }
+  v.innerHTML =
+    '<div class="card"><b>Sign in with your email</b><div class="mini">We send a 6-digit code. No password. Signed in, your records are kept in your Koko account and on every phone you sign in on.</div>' +
+    (email
+      ? '<div class="mini" style="margin-top:8px">Code sent to <b>' +
+        esc(email) +
+        '</b>.</div><input id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" style="width:100%;margin-top:6px"><div class="row" style="margin-top:8px"><button class="btn cocoa" id="ver">Sign in</button><button class="btn" id="back">Use another email</button></div>'
+      : '<input id="em" type="email" autocomplete="email" placeholder="you@example.com" style="width:100%;margin-top:8px"><div class="row" style="margin-top:8px"><button class="btn cocoa" id="req">Send code</button></div>') +
+    '</div>';
+  if ($('#req'))
+    $('#req').onclick = async () => {
+      const e = $('#em').value.trim();
+      if (!/@/.test(e)) return toast('Enter your email');
+      const r = await SYNC.requestSignIn(e);
+      if (r.error) return toast(r.error);
+      email = e;
+      draw();
+    };
+  if ($('#ver'))
+    $('#ver').onclick = async () => {
+      const r = await SYNC.verifyCode(email, $('#code').value);
+      if (r.error) return toast(r.error);
+      toast('Signed in');
+      draw('Syncing…');
+      ORIGIN.sync()
+        .then(() => draw('Synced.'))
+        .catch(e => draw('Sync failed: ' + e.message));
+    };
+  if ($('#back'))
+    $('#back').onclick = () => {
+      email = '';
+      draw();
+    };
+}
+function upd() {
+  try {
+    if (localStorage.getItem('kk_update_ready')) $('#upd').hidden = false;
+  } catch (e) {}
+}
+upd();
+window.addEventListener('kk-update', upd);
+$('#updGo').onclick = () => {
+  try {
+    localStorage.removeItem('kk_update_ready');
+  } catch (e) {}
+  location.reload();
+};
+draw();
+ORIGIN.onSync(s => {
+  if ($('#st'))
+    $('#st').textContent =
+      s.status === 'synced'
+        ? 'Synced ' + new Date().toLocaleTimeString()
+        : s.status === 'error'
+          ? 'Sync error: ' + s.error
+          : s.status;
+});
+$('#exp').onclick = async () => {
+  const all = await ORIGIN.allTypes();
+  const blob = new Blob(
+    [JSON.stringify({ app: 'Koko by KoffyKraft', saved: new Date().toISOString(), records: all }, null, 1)],
+    { type: 'application/json' }
+  );
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'koko-records-' + today() + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast('Saved');
+};
+$('#imp').onchange = async e => {
+  try {
+    const j = JSON.parse(await e.target.files[0].text());
+    let n = 0;
+    for (const list of Object.values(j.records || {}))
+      for (const r of list || []) {
+        if (!r || !r.id || !ORIGIN.TYPES.includes(r.type)) continue;
+        const have = await ORIGIN.get(r.id);
+        if (have && String(have.updatedAt) >= String(r.updatedAt)) continue;
+        await ORIGIN.put(r);
+        n++;
+      }
+    toast('Restored ' + n + ' records');
+  } catch (x) {
+    toast('Could not open: ' + x.message);
+  }
+};
+$('#fbS').onclick = async () => {
+  const text = $('#fbT').value.trim();
+  if (!text) return toast('Write a message first');
+  try {
+    const r = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kind: 'idea', message: text, contact: $('#fbC').value.trim(), page: 'account' }),
+    });
+    if (!r.ok) throw new Error('not sent');
+    $('#fbT').value = '';
+    toast('Thank you, sent');
+  } catch (x) {
+    toast('Could not send: ' + x.message);
+  }
+};
+</script>
+<script src="pv.js" defer></script>
+</body>
+</html>

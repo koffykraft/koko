@@ -1,0 +1,226 @@
+<!doctype html>
+<!-- KoffyKraft (C) 2026 T M Thomas. AGPL-3.0 with additional terms (attribution, names): see NOTICE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f3ee">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Koko Learn</title>
+<link rel="stylesheet" href="koko.css">
+<style>
+.step {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+}
+.num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--cocoa);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+details summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 4px 0;
+}
+.chem {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+</style>
+<link rel="stylesheet" href="kk.css"><script src="tap.js" defer></script><script src="kk-base.js"></script>
+</head>
+<body data-page="learn"><main class="app">
+<header id="kh"></header>
+<div id="view"></div>
+<div id="kf"></div>
+</main>
+<script src="koko.js"></script><script src="koko-data.js"></script>
+<script>
+// Learn: the journey from pod to bar, crop care, planting material, cocoa around the world, and the
+// standards the Farm page uses. Our own words; every part names its source.
+const $ = s => document.querySelector(s);
+const TABS = [
+  ['journey', 'Pod to bar'],
+  ['care', 'Crop care'],
+  ['clones', 'Varieties'],
+  ['world', 'Around the world'],
+  ['standards', 'Grades'],
+];
+const JOURNEY = [
+  [
+    'The tree',
+    'Cocoa grows under shade in the humid tropics, often between coconut or arecanut in Kerala. Flowers and pods come straight off the trunk and thick branches.',
+    '',
+  ],
+  [
+    'Ripe pods',
+    'Pick pods as they ripen, every one to two weeks, so squirrels, rats and black pod take fewer. Remove rotten pods at every round.',
+    'KAUP',
+  ],
+  [
+    'Opening',
+    'Open pods within 7 to 10 days of picking. A blow with a wooden club splits the pod without cutting beans.',
+    'ICCO',
+  ],
+  [
+    'Fermentation',
+    'Wet beans in their pulp go into a box, basket, tray or heap under banana leaves. Yeasts and bacteria feed on the pulp, the mass warms to 40 to 48 °C, and the bean inside changes from purple and bitter to brown and chocolatey. Turn to let air in. 5 to 7 days for most cocoa.',
+    'CPCRI',
+  ],
+  [
+    'What happens inside',
+    'First yeasts feed on the sugary pulp without air and make alcohol; lactic acid bacteria follow. Once turning lets air in, acetic acid bacteria turn the alcohol into acetic acid. That heats the mass, and the heat and acid soak into the bean, kill the germ and set off the reactions that later give chocolate flavour in the roast.',
+    'DV',
+  ],
+  [
+    'Drying',
+    'Spread thin on raised beds or in a solar dryer and turn often. Slow, even drying down to about 7.5% moisture; never above 65 °C.',
+    'ICCO',
+  ],
+  [
+    'Cut test and grade',
+    'Cut 300 beans: brown inside means well fermented; slaty grey means not fermented. Count the defects to grade the lot.',
+    'ISO',
+  ],
+  [
+    'Roast',
+    'Flavour forms in two stages: on the farm in fermentation, and in roasting. The right roast depends on the beans, the flavour you want and the roaster; it loosens the shell too.',
+    'ICCOP',
+  ],
+  ['Crack and winnow', 'Crack the roasted beans and blow away the shell, leaving nibs.', ''],
+  [
+    'Grind, refine, conche',
+    'Grind nibs to liquor, add sugar (and milk), refine until smooth, and conche to round off harsh acids.',
+    '',
+  ],
+  [
+    'Temper and mould',
+    'Melt, cool and warm again so the cocoa butter sets in its stable form: snap, shine and no bloom.',
+    'CB',
+  ],
+  [
+    'In the factory: butter and powder',
+    'Large processors grind nibs to liquor and press it hot in hydraulic presses (up to 550 bar) into cocoa butter and cake; the cake is milled to powder. Some cocoa is alkalised (Dutch processed) for a darker colour and milder taste. Chocolate is liquor, butter and sugar (and milk), refined, conched and adjusted with cocoa butter.',
+    'ICCOP',
+  ],
+];
+function tabs(on) {
+  return (
+    '<div class="tabs">' +
+    TABS.map(([k, l]) => '<a href="#' + k + '"' + (k === on ? ' class="on"' : '') + '>' + l + '</a>').join(
+      ''
+    ) +
+    '</div>'
+  );
+}
+function journey() {
+  return JOURNEY.map(
+    ([t, d, s], i) =>
+      '<div class="card step"><div class="num">' +
+      (i + 1) +
+      '</div><div><b>' +
+      t +
+      '</b><div style="margin-top:4px;line-height:1.5">' +
+      d +
+      '</div>' +
+      (s ? '<div class="mini" style="margin-top:4px">' + srcLink(s) + '</div>' : '') +
+      '</div></div>'
+  ).join('');
+}
+function care() {
+  return (
+    '<div class="sub">Cultural care first: it is cheaper and safer. Chemical options are listed under each problem as the Cocoa Research Centre gives them; read the label and ask your Krishi Bhavan or extension officer before spraying.</div>' +
+    CARE.map(
+      ([n, k, sym, cult, chem]) =>
+        '<div class="card"><details><summary>' +
+        n +
+        ' <span class="tag' +
+        (k === 'Pest' || k === 'Animal' ? ' wait' : k === 'Disease' ? ' bad' : '') +
+        '">' +
+        k +
+        '</span></summary><div style="margin-top:6px"><b>Signs.</b> ' +
+        sym +
+        '</div><div style="margin-top:6px"><b>Care.</b> ' +
+        cult +
+        '</div>' +
+        (chem ? '<div class="chem"><b>Chemical option.</b> ' + chem + '</div>' : '') +
+        '</details></div>'
+    ).join('') +
+    '<div class="mini">' +
+    srcLink('KAUP') +
+    '</div>'
+  );
+}
+function clones() {
+  return (
+    '<div class="sub">The main groups, well known clones, and the varieties released in Kerala. Type any of these in a block on the Farm page.</div>' +
+    KOKO_CLONES.map(
+      ([n, k, d, s]) =>
+        '<div class="card"><b>' +
+        n +
+        '</b> <span class="tag">' +
+        k +
+        '</span><div class="mini" style="margin-top:4px">' +
+        d +
+        ' ' +
+        srcLink(s) +
+        '</div></div>'
+    ).join('') +
+    '<div class="card mini">For the traits of each CCRP variety and planting material, contact the Cocoa Research Centre, Kerala Agricultural University, Vellanikkara.</div>'
+  );
+}
+function world() {
+  return (
+    '<div class="sub">How cocoa is grown, fermented and sold in other countries, from the ICCO global review (2022).</div><h2>Facts</h2>' +
+    WORLD.facts.map(f => '<div class="card">' + f + '</div>').join('') +
+    '<h2>Fermentation and drying by country</h2><div class="card"><table class="t">' +
+    WORLD.ferment.map(([c, d]) => '<tr><td><b>' + c + '</b></td><td>' + d + '</td></tr>').join('') +
+    '</table></div>' +
+    '<h2>Main pests and diseases by country</h2><div class="card"><table class="t">' +
+    WORLD.pests.map(([c, d]) => '<tr><td><b>' + c + '</b></td><td>' + d + '</td></tr>').join('') +
+    '</table></div>' +
+    '<div class="mini">' +
+    srcLink('REV') +
+    '<br>' +
+    srcLink('GG') +
+    '</div>'
+  );
+}
+function standards() {
+  return (
+    '<div class="sub">What the Farm page checks a dry bean lot against.</div>' +
+    '<div class="card"><b>Moisture</b><div class="mini" style="margin-top:4px">At most 8.0% at the first sale in the producing country, 7.5% for export shipment. ' +
+    srcLink('ISO') +
+    '</div></div>' +
+    '<div class="card"><b>Cut test</b><div class="mini" style="margin-top:4px">300 beans cut lengthwise and counted. Good fermented: at most 5% slaty and 5% defective. Fair fermented: at most 10% of each. ' +
+    srcLink('ISO') +
+    '</div><table class="t" style="margin-top:8px"><tr><th></th><th>Mouldy</th><th>Slaty</th><th>Insect, germinated, flat</th></tr><tr><td><b>Grade I</b></td><td>3%</td><td>3%</td><td>3%</td></tr><tr><td><b>Grade II</b></td><td>4%</td><td>8%</td><td>6%</td></tr></table><div class="mini" style="margin-top:4px">Grade limits as listed by ' +
+    srcLink('NEPC') +
+    '. Check the contract: buyers may set their own.</div></div>' +
+    '<div class="card"><b>Bean count (beans in 100 g)</b><table class="t" style="margin-top:6px"><tr><td>100 or fewer</td><td>Standard size</td></tr><tr><td>101 to 110</td><td>Medium</td></tr><tr><td>111 to 120</td><td>Small</td></tr><tr><td>over 120</td><td>Very small</td></tr></table><div class="mini" style="margin-top:4px">' +
+    srcLink('ISO') +
+    '</div></div>' +
+    '<div class="card"><b>Other limits</b><div class="mini" style="margin-top:4px">Cocoa-related matter at most 3.5% and flat beans at most 1.5% by mass. ' +
+    srcLink('ISO') +
+    '</div></div>'
+  );
+}
+function route() {
+  const on = (location.hash.slice(1) || 'journey').split('/')[0];
+  const body = { journey, care, clones, world, standards }[on] || journey;
+  $('#view').innerHTML = '<h1>Learn</h1>' + tabs(TABS.some(t => t[0] === on) ? on : 'journey') + body();
+}
+window.addEventListener('hashchange', route);
+route();
+</script>
+<script src="pv.js" defer></script>
+</body>
+</html>

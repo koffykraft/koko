@@ -1,0 +1,324 @@
+<!doctype html>
+<!-- KoffyKraft (C) 2026 T M Thomas. AGPL-3.0 with additional terms (attribution, names): see NOTICE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f3ee">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Koko Bean to Bar</title>
+<link rel="stylesheet" href="koko.css">
+<style>
+.two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.full {
+  grid-column: 1 / -1;
+}
+.sec {
+  grid-column: 1 / -1;
+  margin: 14px 0 0;
+  font-weight: 700;
+  font-size: 15px;
+}
+.bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+}
+</style>
+<link rel="stylesheet" href="kk.css"><script src="tap.js" defer></script><script src="kk-base.js"></script>
+</head>
+<body data-page="bar"><main class="app">
+<header id="kh"></header>
+<div id="view"></div>
+<div id="kf"></div>
+</main>
+<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script><script src="kk-units.js" defer></script>
+<script>
+// Bean to bar: one batch from dry beans to moulded bars. Stored as record type "batch".
+const $ = s => document.querySelector(s);
+let LOTS = [],
+  BATCHES = [],
+  CUR = null;
+async function load() {
+  const d = await ORIGIN.allTypes(['green', 'batch']);
+  LOTS = d.green;
+  BATCHES = d.batch.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+}
+const lotName = id => {
+  const g = LOTS.find(x => x.id === id);
+  return g ? (g.code || 'Lot') + (g.name ? ' · ' + g.name : '') : '';
+};
+function sums(b) {
+  const shell = +b.winIn && +b.nibsKg ? Math.round(((+b.winIn - +b.nibsKg) / +b.winIn) * 1000) / 10 : null;
+  const rec = recipe(b.nibsKg, b.pct || {});
+  const yieldPct = +b.beansKg && +b.outKg ? Math.round((+b.outKg / +b.beansKg) * 1000) / 10 : null;
+  return { shell, rec, yieldPct };
+}
+async function listView() {
+  await load();
+  $('#view').innerHTML =
+    '<h1>Bean to bar</h1><div class="sub">One batch from dry beans to bars: roast, crack and winnow, grind and refine, conche, temper and mould. The sums (shell share, recipe weights, yield) are done for you.</div>' +
+    '<div class="row" style="margin:8px 0"><a class="btn cocoa" href="#new">＋ New batch</a></div>' +
+    (BATCHES.length
+      ? BATCHES.map(b => {
+          const s = sums(b);
+          return (
+            '<div class="card"><a class="item" href="#edit/' +
+            encodeURIComponent(b.id) +
+            '"><b>' +
+            esc(b.name || 'Batch') +
+            '</b>' +
+            (s.rec.cocoa ? ' <span class="tag">' + s.rec.cocoa + '% cocoa</span>' : '') +
+            '<div class="mini">' +
+            esc(
+              [
+                fmtDate(b.date),
+                lotName(b.lotId) || b.beanSource,
+                b.beansKg ? b.beansKg + ' kg beans' : '',
+                b.bars ? b.bars + ' bars' : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            ) +
+            '</div></a></div>'
+          );
+        }).join('')
+      : '<div class="card mini">No batches yet. Start from a dry bean lot on the Farm page, or from beans you bought.</div>') +
+    tempGuide();
+}
+function tempGuide() {
+  return (
+    '<h2>Tempering temperatures</h2><div class="card"><table class="t"><tr><th></th><th>Melt</th><th>Cool to</th><th>Work at</th><th>Not above</th></tr>' +
+    Object.entries(TEMPER)
+      .map(
+        ([k, v]) =>
+          '<tr><td><b>' +
+          k +
+          '</b></td><td>' +
+          v.melt +
+          ' °C</td><td>' +
+          v.cool +
+          ' °C</td><td>' +
+          v.work +
+          ' °C</td><td>' +
+          v.max +
+          ' °C</td></tr>'
+      )
+      .join('') +
+    '</table><div class="mini" style="margin-top:6px">For Callebaut couvertures; your own chocolate may differ a little with its cocoa butter. ' +
+    srcLink('CB') +
+    '</div></div>'
+  );
+}
+const F = (k, l, ty, extra) => {
+  const v = CUR && CUR[k] != null ? CUR[k] : '';
+  if (ty === 'area')
+    return '<label class="f full">' + l + '<textarea data-k="' + k + '">' + esc(v) + '</textarea></label>';
+  if (ty === 'select')
+    return (
+      '<label class="f">' +
+      l +
+      '<select data-k="' +
+      k +
+      '"><option value=""></option>' +
+      extra.map(x => '<option' + (x === v ? ' selected' : '') + '>' + esc(x) + '</option>').join('') +
+      '</select></label>'
+    );
+  return (
+    '<label class="f">' +
+    l +
+    '<input data-k="' +
+    k +
+    '" type="' +
+    (ty || 'text') +
+    '"' +
+    (ty === 'number' ? ' step="any" inputmode="decimal"' : '') +
+    ' value="' +
+    esc(v) +
+    '" placeholder="' +
+    esc(extra || '') +
+    '"></label>'
+  );
+};
+const P = (k, l) =>
+  '<label class="f">' +
+  l +
+  ' %<input data-p="' +
+  k +
+  '" type="number" step="any" inputmode="decimal" value="' +
+  esc((CUR && CUR.pct && CUR.pct[k]) ?? '') +
+  '"></label>';
+async function editView(id, lotId) {
+  await load();
+  CUR = id
+    ? BATCHES.find(b => b.id === id) || null
+    : { date: today(), lotId: lotId || '', pct: { nibs: 70, sugar: 30 }, type: 'batch' };
+  if (!CUR) {
+    $('#view').innerHTML = '<div class="card">Not found on this device. <a href="#">Back</a></div>';
+    return;
+  }
+  $('#view').innerHTML =
+    '<a href="#">‹ Batches</a><h1>' +
+    (id ? esc(CUR.name || 'Batch') : 'New batch') +
+    '</h1><div class="two" id="form">' +
+    F('name', 'Batch name *', 'text', '70% Thumpassery, batch 3') +
+    F('date', 'Date', 'date') +
+    '<label class="f full">Beans from<select data-k="lotId"><option value="">Beans I bought (type below)</option>' +
+    LOTS.map(
+      g =>
+        '<option value="' +
+        esc(g.id) +
+        '"' +
+        (g.id === CUR.lotId ? ' selected' : '') +
+        '>' +
+        esc(lotName(g.id)) +
+        '</option>'
+    ).join('') +
+    '</select></label>' +
+    F('beanSource', 'Bought beans: origin and seller', 'text') +
+    F('beansKg', 'Dry beans in, kg', 'number') +
+    '<div class="sec">Roast</div>' +
+    F('roaster', 'Roaster', 'select', ['Oven', 'Drum roaster', 'Pan or wok', 'Other']) +
+    F('roastTemp', 'Temperature, °C', 'number') +
+    F('roastMin', 'Time, minutes', 'number') +
+    F('roastNote', 'What you smelled or heard', 'text') +
+    '<div class="sec">Crack and winnow</div>' +
+    F('winIn', 'Roasted beans in, kg', 'number') +
+    F('nibsKg', 'Nibs out, kg', 'number') +
+    '<div class="full mini" id="shellOut"></div>' +
+    '<div class="sec">Recipe</div>' +
+    P('nibs', 'Nibs') +
+    P('butter', 'Added cocoa butter') +
+    P('sugar', 'Sugar') +
+    P('milk', 'Milk powder') +
+    P('other', 'Other') +
+    F('otherName', 'Other is', 'text', 'Vanilla, salt, cardamom') +
+    '<div class="card full" id="recOut"></div>' +
+    '<div class="sec">Grind, refine, conche</div>' +
+    F('grinder', 'Machine', 'select', ['Stone melanger', 'Ball mill', 'Juicer then melanger', 'Other']) +
+    F('refineH', 'Refining, hours', 'number') +
+    F('concheH', 'Conching, hours', 'number') +
+    F('massTemp', 'Mass temperature, °C', 'number') +
+    '<div class="sec">Temper and mould</div>' +
+    F('chocType', 'Chocolate', 'select', ['Dark', 'Milk', 'White']) +
+    F('temperMethod', 'Method', 'select', [
+      'Seeding',
+      'Table (marble)',
+      'Microwave',
+      'Machine',
+      'Cocoa butter crystals',
+    ]) +
+    F('tMelt', 'Melted at, °C', 'number') +
+    F('tCool', 'Cooled to, °C', 'number') +
+    F('tWork', 'Worked at, °C', 'number') +
+    '<div class="full mini" id="temperOut"></div>' +
+    F('bars', 'Bars', 'number') +
+    F('barG', 'Bar weight, g', 'number') +
+    F('outKg', 'Chocolate out, kg', 'number') +
+    '<div class="full mini" id="yieldOut"></div>' +
+    F('notes', 'Notes', 'area') +
+    '</div><div class="row bar"><button class="btn cocoa" id="save">Save</button>' +
+    (id ? '<a class="btn" href="taste.html#batch/' + encodeURIComponent(id) + '">Taste it</a>' : '') +
+    '<a class="btn" href="#">Cancel</a>' +
+    (id ? '<button class="btn danger" id="del" style="margin-left:auto">Delete</button>' : '') +
+    '</div>';
+  $('#form').addEventListener('input', live);
+  $('#form').addEventListener('change', live);
+  live();
+  $('#save').onclick = async () => {
+    const r = collect();
+    if (!r.name) return toast('Give the batch a name');
+    const s = await ORIGIN.put(r);
+    toast('Saved');
+    if (location.hash === '#edit/' + encodeURIComponent(s.id)) editView(s.id);
+    else location.hash = '#edit/' + encodeURIComponent(s.id);
+  };
+  if ($('#del'))
+    $('#del').onclick = async () => {
+      if (!confirm('Delete this batch?')) return;
+      await ORIGIN.remove(CUR.id);
+      location.hash = '';
+    };
+}
+function collect() {
+  const r = { ...CUR, type: 'batch', pct: {} };
+  document
+    .querySelectorAll('#form [data-k]')
+    .forEach(
+      el => (r[el.dataset.k] = el.type === 'number' ? (el.value === '' ? '' : +el.value) : el.value.trim())
+    );
+  document
+    .querySelectorAll('#form [data-p]')
+    .forEach(el => (r.pct[el.dataset.p] = el.value === '' ? '' : +el.value));
+  return r;
+}
+function live() {
+  const b = collect(),
+    s = sums(b);
+  $('#shellOut').textContent =
+    s.shell != null ? 'Shell and dust: ' + s.shell + '% of the roasted beans.' : '';
+  const r = s.rec;
+  $('#recOut').innerHTML =
+    (r.sum && Math.abs(r.sum - 100) > 0.05
+      ? '<b style="color:var(--bad)">The recipe adds up to ' + r.sum + '%, not 100%.</b><br>'
+      : '') +
+    (r.total
+      ? '<b>' +
+        r.cocoa +
+        '% cocoa</b> (nibs plus added butter). For ' +
+        +b.nibsKg +
+        ' kg nibs: about <b>' +
+        r.total +
+        ' kg</b> of chocolate, with ' +
+        [
+          r.butter ? r.butter + ' kg cocoa butter' : '',
+          r.sugar ? r.sugar + ' kg sugar' : '',
+          r.milk ? r.milk + ' kg milk powder' : '',
+          r.other ? r.other + ' kg ' + (b.otherName || 'other') : '',
+        ]
+          .filter(Boolean)
+          .join(', ') +
+        '.'
+      : '<span class="mini">Fill in nibs out (kg) and the recipe to see how much of each to add.</span>');
+  const tg = TEMPER[b.chocType];
+  $('#temperOut').innerHTML = tg
+    ? b.chocType +
+      ' guide: melt ' +
+      tg.melt +
+      ' °C, cool to ' +
+      tg.cool +
+      ' °C, work at ' +
+      tg.work +
+      ' °C. ' +
+      srcLink('CB') +
+      (+b.tWork && +b.tWork > +tg.max
+        ? ' <b style="color:var(--bad)">Working above ' + tg.max + ' °C loses the temper.</b>'
+        : '')
+    : '';
+  $('#yieldOut').textContent =
+    s.yieldPct != null
+      ? 'Chocolate out is ' + s.yieldPct + '% of the dry bean weight (sugar and other additions included).'
+      : '';
+}
+function route() {
+  const h = location.hash.slice(1);
+  let m;
+  if (h === 'new') return editView(null);
+  if ((m = h.match(/^new\/(.+)$/))) return editView(null, decodeURIComponent(m[1]));
+  if ((m = h.match(/^edit\/(.+)$/))) return editView(decodeURIComponent(m[1]));
+  listView();
+}
+window.addEventListener('hashchange', route);
+route();
+ORIGIN.sync().catch(() => {});
+</script>
+<script src="pv.js" defer></script>
+</body>
+</html>

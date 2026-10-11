@@ -1,0 +1,268 @@
+<!doctype html>
+<!-- KoffyKraft (C) 2026 T M Thomas. AGPL-3.0 with additional terms (attribution, names): see NOTICE. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f3ee">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Koko Taste</title>
+<link rel="stylesheet" href="koko.css">
+<style>
+.two {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.full {
+  grid-column: 1 / -1;
+}
+.att {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 30px;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  margin: 4px 0;
+}
+.att input {
+  width: 100%;
+  padding: 0;
+  accent-color: var(--cocoa);
+}
+.att b {
+  text-align: right;
+}
+.prof {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 3px 8px;
+  font-size: 12.5px;
+  align-items: center;
+}
+.prof i {
+  display: block;
+  height: 9px;
+  border-radius: 5px;
+  background: var(--cocoa);
+}
+.checks label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin: 4px 10px 4px 0;
+  font-size: 14px;
+}
+.bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+}
+</style>
+<link rel="stylesheet" href="kk.css"><script src="tap.js" defer></script><script src="kk-base.js"></script>
+</head>
+<body data-page="taste"><main class="app">
+<header id="kh"></header>
+<div id="view"></div>
+<div id="kf"></div>
+</main>
+<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script>
+<script>
+// Tasting: cocoa liquor, nibs or chocolate, scored 0 to 10 on the usual cocoa attributes.
+const $ = s => document.querySelector(s);
+const FORMS = ['Cocoa liquor (mass)', 'Chocolate', 'Nibs', 'Dry beans (cut and smelled)'];
+let D = { green: [], batch: [], tasting: [] },
+  CUR = null;
+async function load() {
+  D = await ORIGIN.allTypes(['green', 'batch', 'tasting']);
+  D.tasting.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+}
+const subj = t => {
+  const g = D.green.find(x => x.id === t.lotId),
+    b = D.batch.find(x => x.id === t.batchId);
+  return b
+    ? b.name || 'Batch'
+    : g
+      ? (g.code || 'Lot') + (g.name ? ' · ' + g.name : '')
+      : t.subject || 'Tasting';
+};
+function profile(t) {
+  const a = t.attrs || {};
+  const rows = TASTE_ATTRS.filter(([k]) => +a[k] > 0);
+  return rows.length
+    ? '<div class="prof">' +
+        rows
+          .map(([k, l]) => '<span>' + l + ' ' + a[k] + '</span><i style="width:' + +a[k] * 10 + '%"></i>')
+          .join('') +
+        '</div>'
+    : '';
+}
+async function listView() {
+  await load();
+  $('#view').innerHTML =
+    '<h1>Taste</h1><div class="sub">Score cocoa liquor, nibs or chocolate from 0 (none) to 10 (very strong) on the usual cocoa attributes, and note any off-flavours. Taste the same lot after each change in fermentation or roast to learn what moved.</div>' +
+    '<div class="row" style="margin:8px 0"><a class="btn cocoa" href="#new">＋ New tasting</a></div>' +
+    (D.tasting.length
+      ? D.tasting
+          .map(
+            t =>
+              '<div class="card"><a class="item" href="#edit/' +
+              encodeURIComponent(t.id) +
+              '"><b>' +
+              esc(subj(t)) +
+              '</b>' +
+              (t.overall !== '' && t.overall != null
+                ? ' <span class="tag">' + t.overall + '/10</span>'
+                : '') +
+              ((t.off || []).length ? ' <span class="tag bad">' + esc(t.off.join(', ')) + '</span>' : '') +
+              '<div class="mini">' +
+              esc([fmtDate(t.date), t.form, t.taster].filter(Boolean).join(' · ')) +
+              '</div>' +
+              profile(t) +
+              '</a></div>'
+          )
+          .join('')
+      : '<div class="card mini">No tastings yet.</div>') +
+    '<div class="card mini">How to taste cocoa liquor: roast a small sample gently, crack and winnow it, grind the nibs to a smooth liquor, and taste it warm. Let it melt on the tongue; note what comes first, in the middle and at the end. Attribute groups follow common cocoa tasting practice, as in the Cacao of Excellence guide (Bioversity International and CIAT, 2023).</div>';
+}
+async function editView(id, pre) {
+  await load();
+  CUR = id
+    ? D.tasting.find(t => t.id === id)
+    : {
+        type: 'tasting',
+        date: today(),
+        attrs: {},
+        off: [],
+        form: pre && pre.batchId ? 'Chocolate' : FORMS[0],
+        ...(pre || {}),
+      };
+  if (!CUR) {
+    $('#view').innerHTML = '<div class="card">Not found on this device. <a href="#">Back</a></div>';
+    return;
+  }
+  const a = CUR.attrs || {};
+  $('#view').innerHTML =
+    '<a href="#">‹ Tastings</a><h1>' +
+    (id ? esc(subj(CUR)) : 'New tasting') +
+    '</h1><div class="two" id="form">' +
+    '<label class="f full">Dry bean lot<select data-k="lotId"><option value=""></option>' +
+    D.green
+      .map(
+        g =>
+          '<option value="' +
+          esc(g.id) +
+          '"' +
+          (g.id === CUR.lotId ? ' selected' : '') +
+          '>' +
+          esc((g.code || 'Lot') + (g.name ? ' · ' + g.name : '')) +
+          '</option>'
+      )
+      .join('') +
+    '</select></label>' +
+    '<label class="f full">or chocolate batch<select data-k="batchId"><option value=""></option>' +
+    D.batch
+      .map(
+        b =>
+          '<option value="' +
+          esc(b.id) +
+          '"' +
+          (b.id === CUR.batchId ? ' selected' : '') +
+          '>' +
+          esc(b.name || 'Batch') +
+          '</option>'
+      )
+      .join('') +
+    '</select></label>' +
+    '<label class="f full">or something else<input data-k="subject" value="' +
+    esc(CUR.subject || '') +
+    '" placeholder="A bar I bought, a sample from a neighbour"></label>' +
+    '<label class="f">What<select data-k="form">' +
+    FORMS.map(f => '<option' + (f === CUR.form ? ' selected' : '') + '>' + f + '</option>').join('') +
+    '</select></label>' +
+    '<label class="f">Date<input data-k="date" type="date" value="' +
+    esc(CUR.date || '') +
+    '"></label>' +
+    '<label class="f full">Taster<input data-k="taster" value="' +
+    esc(CUR.taster || '') +
+    '"></label>' +
+    '</div><h2>Attributes, 0 to 10</h2><div class="card">' +
+    TASTE_ATTRS.map(
+      ([k, l]) =>
+        '<div class="att"><span>' +
+        l +
+        '</span><input type="range" min="0" max="10" step="0.5" data-a="' +
+        k +
+        '" value="' +
+        (+a[k] || 0) +
+        '"><b data-v="' +
+        k +
+        '">' +
+        (+a[k] || 0) +
+        '</b></div>'
+    ).join('') +
+    '</div><h2>Off-flavours</h2><div class="card checks">' +
+    TASTE_OFF.map(
+      o =>
+        '<label><input type="checkbox" data-off value="' +
+        esc(o) +
+        '"' +
+        ((CUR.off || []).includes(o) ? ' checked' : '') +
+        '>' +
+        o +
+        '</label>'
+    ).join('') +
+    '</div><div class="two"><label class="f">Overall, 0 to 10<input data-k="overall" type="number" min="0" max="10" step="0.5" inputmode="decimal" value="' +
+    esc(CUR.overall ?? '') +
+    '"></label><div></div><label class="f full">Notes<textarea data-k="notes">' +
+    esc(CUR.notes || '') +
+    '</textarea></label></div>' +
+    '<div class="row bar"><button class="btn cocoa" id="save">Save</button><a class="btn" href="#">Cancel</a>' +
+    (id ? '<button class="btn danger" id="del" style="margin-left:auto">Delete</button>' : '') +
+    '</div>';
+  document
+    .querySelectorAll('[data-a]')
+    .forEach(
+      i =>
+        (i.oninput = () => (document.querySelector('[data-v="' + i.dataset.a + '"]').textContent = i.value))
+    );
+  $('#save').onclick = async () => {
+    const r = { ...CUR, type: 'tasting', attrs: {}, off: [] };
+    document
+      .querySelectorAll('[data-k]')
+      .forEach(
+        el => (r[el.dataset.k] = el.type === 'number' ? (el.value === '' ? '' : +el.value) : el.value.trim())
+      );
+    document.querySelectorAll('[data-a]').forEach(el => (r.attrs[el.dataset.a] = +el.value));
+    r.off = [...document.querySelectorAll('[data-off]:checked')].map(el => el.value);
+    if (!r.lotId && !r.batchId && !r.subject) return toast('Pick a lot or batch, or say what it is');
+    await ORIGIN.put(r);
+    toast('Saved');
+    location.hash = '';
+  };
+  if ($('#del'))
+    $('#del').onclick = async () => {
+      if (!confirm('Delete this tasting?')) return;
+      await ORIGIN.remove(CUR.id);
+      location.hash = '';
+    };
+}
+function route() {
+  const h = location.hash.slice(1);
+  let m;
+  if (h === 'new') return editView(null);
+  if ((m = h.match(/^new\/(.+)$/))) return editView(null, { lotId: decodeURIComponent(m[1]) });
+  if ((m = h.match(/^batch\/(.+)$/))) return editView(null, { batchId: decodeURIComponent(m[1]) });
+  if ((m = h.match(/^edit\/(.+)$/))) return editView(decodeURIComponent(m[1]));
+  listView();
+}
+window.addEventListener('hashchange', route);
+route();
+ORIGIN.sync().catch(() => {});
+</script>
+<script src="pv.js" defer></script>
+</body>
+</html>
