@@ -181,6 +181,25 @@ export async function run(root, t) {
       if (n !== 1) throw new Error('trails ' + n);
       if (await q.evaluate(() => 'SYNC' in window)) throw new Error('trail page loads cloud sync');
     });
+    await t.acheck('Account: the owner sees stats, accounts and feedback; others do not', async () => {
+      const a = await ctx.newPage();
+      let admin = false;
+      await a.route('**/api/**', r => {
+        const u = r.request().url();
+        if (u.endsWith('/api/me')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ user: { id: 'u1' }, admin }) });
+        if (u.endsWith('/api/admin/stats')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ accounts: { n: 3, d7: 2, d30: 3 }, views: [{ day: '2026-10-11', views: 40, devices: 5 }], pages: [{ path: '/farm.html', views: 22 }], records: [{ type: 'green', n: 4 }], users: [{ email: 'grower@example.com', created_at: '2026-10-11', records: 4 }] }) });
+        if (u.endsWith('/api/feedback')) return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ items: [{ created_at: '2026-10-11', page: 'account', message: 'Add Brix please' }] }) });
+        return r.fulfill({ contentType: 'application/json', body: '{}' });
+      });
+      await a.goto(base + 'account.html'); await a.evaluate(() => { localStorage.setItem('kk_auth_token', 't'); localStorage.setItem('kk_user_email', 'x@example.com') });
+      await a.goto(base + 'account.html'); await a.waitForTimeout(500);
+      if ((await a.innerText('#admin')).trim()) throw new Error('owner view shown to a non-admin');
+      admin = true;
+      await a.goto(base + 'account.html'); await a.waitForTimeout(600);
+      const v = await a.innerText('#admin');
+      for (const w of ['Owner view', 'Dry bean lots', 'grower@example.com', 'Add Brix please', '/farm.html']) if (!v.toLowerCase().includes(w.toLowerCase())) throw new Error('missing ' + w);
+      await a.close();
+    });
     await t.acheck('no script errors during the journeys', async () => { if (errs.length) throw new Error(errs[0]) });
   } finally {
     await browser.close(); srv.close();

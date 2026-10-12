@@ -15,6 +15,7 @@
 <h1>Account</h1>
 <div id="upd" class="card" hidden><b>A newer version is ready.</b> <button class="btn small cocoa" id="updGo">Reload</button></div>
 <div id="view"></div>
+<div id="admin"></div>
 <h2>Your data</h2>
 <div class="card"><div class="mini">Save a copy of every record on this phone (farms, blocks, pickings, fermentation runs, lots, batches, tastings) as one file, and keep it in Files, Drive or Dropbox. Open it again here to restore.</div><div class="row" style="margin-top:8px"><button class="btn small" id="exp">Save all records (.json)</button><label class="btn small" style="cursor:pointer">Open a saved file<input id="imp" type="file" accept=".json,application/json" hidden></label></div></div>
 <h2>Tell us</h2>
@@ -41,6 +42,7 @@ function draw(state) {
     $('#out').onclick = async () => {
       await SYNC.logout();
       draw();
+      adminView();
     };
     return;
   }
@@ -66,6 +68,7 @@ function draw(state) {
       const r = await SYNC.verifyCode(email, $('#code').value);
       if (r.error) return toast(r.error);
       toast('Signed in');
+      adminView();
       draw('Syncing…');
       ORIGIN.sync()
         .then(() => draw('Synced.'))
@@ -90,7 +93,151 @@ $('#updGo').onclick = () => {
   } catch (e) {}
   location.reload();
 };
+// ---------- owner view: only for the admin emails set on the Worker ----------
+const TYPE_NAMES = {
+  estate: 'Farms',
+  plot: 'Blocks',
+  harvest: 'Pod harvests',
+  process: 'Fermentation runs',
+  green: 'Dry bean lots',
+  batch: 'Chocolate batches',
+  tasting: 'Tastings',
+};
+async function adminView() {
+  const box = $('#admin');
+  box.innerHTML = '';
+  if (!SYNC.isAuthenticated()) return;
+  const h = { authorization: 'Bearer ' + SYNC.getToken() };
+  let me;
+  try {
+    me = await (await fetch('/api/me', { headers: h })).json();
+  } catch (e) {
+    return;
+  }
+  if (!me || !me.admin) return;
+  box.innerHTML = '<h2>Owner view</h2><div class="card mini">Loading…</div>';
+  let st = {},
+    fb = { items: [] };
+  try {
+    [st, fb] = await Promise.all([
+      fetch('/api/admin/stats', { headers: h }).then(r => r.json()),
+      fetch('/api/feedback', { headers: h }).then(r => r.json()),
+    ]);
+  } catch (e) {
+    box.innerHTML = '<h2>Owner view</h2><div class="card">Could not load: ' + esc(e.message) + '</div>';
+    return;
+  }
+  const a = st.accounts || {};
+  const views = st.views || [];
+  const maxV = Math.max(1, ...views.map(v => +v.views || 0));
+  const recs = st.records || [];
+  box.innerHTML =
+    '<h2>Owner view</h2>' +
+    '<div class="card"><div class="row" style="gap:18px">' +
+    [
+      ['Accounts', a.n || 0],
+      ['New in 7 days', a.d7 || 0],
+      ['New in 30 days', a.d30 || 0],
+      ['Records', recs.reduce((x, r) => x + (+r.n || 0), 0)],
+    ]
+      .map(
+        ([l, n]) =>
+          '<div><div style="font-size:24px;font-weight:700">' +
+          n +
+          '</div><div class="mini">' +
+          l +
+          '</div></div>'
+      )
+      .join('') +
+    '</div></div>' +
+    '<div class="card"><b>Page views, last 30 days</b><div style="display:flex;align-items:flex-end;gap:2px;height:80px;margin-top:8px">' +
+    (views.length
+      ? views
+          .map(
+            v =>
+              '<div title="' +
+              esc(v.day) +
+              ': ' +
+              v.views +
+              ' views, ' +
+              (v.devices || 0) +
+              ' new devices" style="flex:1;background:var(--cocoa);border-radius:2px 2px 0 0;height:' +
+              Math.max(3, Math.round((+v.views / maxV) * 100)) +
+              '%"></div>'
+          )
+          .join('')
+      : '<span class="mini">No views yet.</span>') +
+    '</div><div class="mini" style="margin-top:4px">' +
+    views.reduce((x, v) => x + (+v.views || 0), 0) +
+    ' views, ' +
+    views.reduce((x, v) => x + (+v.devices || 0), 0) +
+    ' new devices.</div>' +
+    ((st.pages || []).length
+      ? '<table class="t" style="margin-top:8px">' +
+        st.pages
+          .slice(0, 10)
+          .map(p => '<tr><td>' + esc(p.path) + '</td><td>' + p.views + '</td></tr>')
+          .join('') +
+        '</table>'
+      : '') +
+    '</div>' +
+    '<div class="card"><b>Records in the cloud</b>' +
+    (recs.length
+      ? '<table class="t" style="margin-top:6px">' +
+        recs
+          .map(r => '<tr><td>' + esc(TYPE_NAMES[r.type] || r.type) + '</td><td>' + r.n + '</td></tr>')
+          .join('') +
+        '</table>'
+      : '<div class="mini">None yet.</div>') +
+    '</div>' +
+    '<div class="card" style="overflow-x:auto"><b>Accounts</b>' +
+    ((st.users || []).length
+      ? '<table class="t" style="margin-top:6px"><tr><th>Email</th><th>Joined</th><th>Records</th><th>Last sign-in</th></tr>' +
+        st.users
+          .map(
+            u =>
+              '<tr><td>' +
+              esc(u.email) +
+              '</td><td>' +
+              esc(fmtDate(u.created_at)) +
+              '</td><td>' +
+              (u.records || 0) +
+              '</td><td>' +
+              esc(fmtDate(u.last_signin)) +
+              '</td></tr>'
+          )
+          .join('') +
+        '</table>'
+      : '<div class="mini">No accounts yet.</div>') +
+    '</div>' +
+    '<div class="card"><b>Feedback</b>' +
+    ((fb.items || []).length
+      ? fb.items
+          .map(
+            f =>
+              '<div style="border-top:1px solid var(--line);padding:8px 0;margin-top:6px"><div class="mini">' +
+              esc(fmtDate(f.created_at)) +
+              (f.page ? ' · ' + esc(f.page) : '') +
+              (f.contact ? ' · ' + esc(f.contact) : '') +
+              '</div><div style="white-space:pre-wrap">' +
+              esc(f.message) +
+              '</div></div>'
+          )
+          .join('')
+      : '<div class="mini">No feedback yet.</div>') +
+    '</div>' +
+    '<div class="card"><b>Lot passports</b><div class="mini">Stamping runs every night. Run it now if needed.</div><button class="btn small" id="stamp" style="margin-top:6px">Stamp passports now</button></div>';
+  $('#stamp').onclick = async () => {
+    try {
+      const r = await (await fetch('/api/trace/anchor', { method: 'POST', headers: h })).json();
+      toast((r.anchored || []).length ? 'Stamped ' + r.anchored.length + ' day(s)' : 'Nothing new to stamp');
+    } catch (e) {
+      toast(e.message);
+    }
+  };
+}
 draw();
+adminView();
 ORIGIN.onSync(s => {
   if ($('#st'))
     $('#st').textContent =
