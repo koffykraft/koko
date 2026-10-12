@@ -57,6 +57,8 @@ export const MODULE_SETTINGS = {
       'Other',
     ],
     severity: ['Low', 'Medium', 'High'],
+    workKinds: ['Weeding', 'Pruning', 'Planting', 'Gap filling', 'Spraying', 'Mulching', 'Other'],
+    treeWord: 'plants',
   },
   team: {
     currency: '₹',
