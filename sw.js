@@ -1,6 +1,17 @@
 // KoffyKraft (C) 2026 T M Thomas. AGPL-3.0 with additional terms (attribution, names): see NOTICE.
-const CACHE = 'koko-v6';
+const CACHE = 'koko-v7';
 const CORE = [
+  './app.config.js',
+  './app.js',
+  './app.css',
+  './places.js',
+  './weather.html',
+  './weather-core.js',
+  './fieldlog.html',
+  './team.html',
+  './jobs.html',
+  './ledger.html',
+  './land.html',
   './home.html',
   './farm.html',
   './map.html',

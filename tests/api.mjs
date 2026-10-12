@@ -26,7 +26,7 @@ function d1(db) {
 
 export async function run(root, t) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kk-api-'));
-  for (const f of ['worker.js', 'trace-api.js', 'trace-core.js', 'schema.js']) fs.copyFileSync(path.join(root, f), path.join(tmp, f));
+  for (const f of ['worker.js', 'trace-api.js', 'trace-core.js', 'schema.js', 'kk-modules.js', 'weather-core.js', ...fs.readdirSync(root).filter(f => /^(weather|fieldlog|team|jobs|ledger|land)-api\.js$/.test(f))]) fs.copyFileSync(path.join(root, f), path.join(tmp, f));
   fs.writeFileSync(path.join(tmp, 'package.json'), '{"type":"module"}');
   const worker = (await import(path.join(tmp, 'worker.js'))).default;
   const { traceAnchor, traceUpgrade } = await import(path.join(tmp, 'trace-api.js'));
@@ -72,6 +72,17 @@ export async function run(root, t) {
   const eq = (a, b, what) => { if (a !== b) throw new Error(`${what}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`) };
 
   try {
+    await t.acheck('modules: picking job wages, a sale owed, land tax due', async () => {
+      await call('POST', '/api/team/workers', { id: 'kw1', name: 'Anu', pay_type: 'daily', rate: 500 }, owner);
+      await call('POST', '/api/team/day', { day: '2026-01-05', marks: [{ worker_id: 'kw1', status: 'P' }] }, owner);
+      await call('POST', '/api/jobs', { id: 'kj1', day: '2026-01-05', kind: 'Pod harvest', basis: 'unit', unit: 'pod', rate: 1, status: 'Done', lines: [{ worker_id: 'kw1', qty: 300 }] }, owner);
+      const m = await call('GET', '/api/team/month?month=2026-01', null, owner);
+      eq(JSON.stringify([m.j.rows[0].base, m.j.rows[0].piece]), '[500,300]', 'wages');
+      await call('POST', '/api/ledger', { id: 'ks1', kind: 'sale', day: '2026-02-01', party: 'Bean buyer', product: 'Dry beans', qty: 50, rate: 300 }, owner);
+      eq((await call('GET', '/api/ledger/owed', null, owner)).j.items[0].owed, 15000, 'owed');
+      await call('POST', '/api/land', { id: 'kl1', kind: 'due', title: 'Land tax', next_due: '2027-04-01', amount: 300 }, owner);
+      eq((await call('GET', '/api/land', null, stranger)).j.items.length, 0, 'private');
+    });
     await t.acheck('root page goes to home', async () => { const r = await worker.fetch(new Request('https://test.local/'), env, ctx); eq(await r.text(), 'asset', 'body') });
     await t.acheck('private API needs sign-in', async () => eq((await call('GET', '/api/spaces')).s, 401, 'status'));
 

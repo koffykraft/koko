@@ -1,0 +1,43 @@
+{
+  "name": "Koko by KoffyKraft",
+  "short": "Koko",
+  "by": "by KoffyKraft",
+  "about": "Cocoa from tree to bar.",
+  "color": "#7a3e26",
+  "bg": "#f7f3ee",
+  "feedbackTo": "info@koffykraft.coffee",
+  "account": "account.html",
+  "placesPage": "farm",
+  "syncRecords": false,
+  "places": { "farm": "estate", "block": "plot", "parent": "estateId" },
+  "words": { "farm": "Farm", "farms": "Farms", "block": "Block", "blocks": "Blocks", "crop": "cocoa" },
+  "nav": [["home", "Home"], ["farm", "Farm"], ["bar", "Bean to bar"], ["taste", "Taste"], ["trail", "Trails"], ["trace", "Passports"], ["learn", "Learn"]],
+  "moduleNav": "subnav",
+  "moduleParent": "farm",
+  "subnav": [["farm", "Records"]],
+  "modules": ["weather", "fieldlog", "team", "jobs", "ledger", "land"],
+  "settings": {
+    "fieldlog": {
+      "healthIssues": ["Black pod rot", "Charcoal pod rot", "Vascular streak dieback", "Stem canker", "Tea mosquito bug", "Mealybug", "Pod borer", "Squirrels and rats", "Nutrient deficiency", "Drought stress", "Waterlogging", "Weeds", "Other"]
+    },
+    "team": { "roles": ["Worker", "Harvester", "Supervisor", "Processing", "Driver", "Watchman", "Other"] },
+    "jobs": {
+      "kinds": [
+        { "name": "Pod harvest", "unit": "pod", "basis": "unit" },
+        { "name": "Pod breaking", "unit": "kg wet beans", "basis": "unit" },
+        { "name": "Fermentation turning", "unit": "day", "basis": "day" },
+        { "name": "Drying", "unit": "day", "basis": "day" },
+        { "name": "Pruning", "unit": "tree", "basis": "unit" },
+        { "name": "Weeding", "unit": "day", "basis": "day" },
+        { "name": "Spraying", "unit": "tank", "basis": "unit" },
+        { "name": "Manuring", "unit": "tree", "basis": "unit" },
+        { "name": "Other", "unit": "", "basis": "fixed" }
+      ]
+    },
+    "ledger": {
+      "products": ["Pods", "Wet beans", "Dry beans", "Nibs", "Cocoa mass", "Chocolate", "Other"],
+      "paymentCategories": ["Wages", "Fertiliser and manure", "Plant protection", "Fermentation and drying", "Packing", "Fuel and power", "Transport", "Tools and repairs", "Rent and lease", "Taxes and licences", "Other"]
+    },
+    "land": { "licenceKinds": ["FSSAI food licence or registration", "Pesticide or fertiliser licence", "Shop or factory licence", "Pollution consent", "Vehicle papers", "Other"] }
+  }
+}

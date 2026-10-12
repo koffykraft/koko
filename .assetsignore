@@ -16,3 +16,12 @@ package-lock.json
 trace-api.js
 schema.js
 sw.js.map
+kk-modules.js
+weather-api.js
+fieldlog-api.js
+team-api.js
+jobs-api.js
+ledger-api.js
+land-api.js
+*.module.json
+kk-app.json

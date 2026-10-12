@@ -9,6 +9,16 @@ const NAV = [
   ['trace', 'Passports'],
   ['learn', 'Learn'],
 ];
+// the farm's own pages: records here, the plug-in modules alongside
+const FARM_NAV = [
+  ['farm', 'Records'],
+  ['weather', 'Weather'],
+  ['fieldlog', 'Field log'],
+  ['team', 'Team'],
+  ['jobs', 'Jobs'],
+  ['ledger', 'Sales and money'],
+  ['land', 'Land and dues'],
+];
 function kokoHeader(on) {
   const h = document.getElementById('kh');
   if (!h) return;
@@ -18,7 +28,15 @@ function kokoHeader(on) {
     NAV.map(
       ([k, l]) => '<a href="' + k + '.html"' + (k === on ? ' aria-current="page"' : '') + '>' + l + '</a>'
     ).join('') +
-    '</nav>';
+    '</nav>' +
+    (on === 'farm'
+      ? '<nav class="kkh-nav" aria-label="Section" style="justify-content:flex-start;gap:6px;border-top:1px dashed var(--kk-line);padding-top:6px">' +
+        FARM_NAV.map(
+          ([k, l]) =>
+            '<a href="' + k + '.html"' + (k === 'farm' ? ' aria-current="page"' : '') + '>' + l + '</a>'
+        ).join('') +
+        '</nav>'
+      : '');
 }
 function kokoFoot() {
   const f = document.getElementById('kf');
