@@ -6,7 +6,7 @@
 const ORIGIN = (() => {
   const NAME = 'KokoRecords',
     STORE = 'records';
-  const TYPES = ['estate', 'plot', 'harvest', 'process', 'green', 'batch', 'tasting'];
+  const TYPES = ['estate', 'plot', 'harvest', 'process', 'green', 'batch', 'tasting', 'lib'];
   let DBP = null;
   function open() {
     if (DBP) return DBP;
