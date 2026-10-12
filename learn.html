@@ -255,7 +255,10 @@ function designations() {
 function route() {
   const on = (location.hash.slice(1) || 'journey').split('/')[0];
   const body = { journey, care, clones, world, standards, protocols, designations }[on] || journey;
-  $('#view').innerHTML = '<h1>Learn</h1>' + tabs(TABS.some(t => t[0] === on) ? on : 'journey') + body();
+  $('#view').innerHTML =
+    '<h1>Learn</h1><div class="mini" style="margin-bottom:6px"><a href="guide.html">How to use the Koko app</a></div>' +
+    tabs(TABS.some(t => t[0] === on) ? on : 'journey') +
+    body();
 }
 window.addEventListener('hashchange', route);
 route();
