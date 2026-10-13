@@ -221,7 +221,9 @@ async function adminView() {
               (f.contact ? ' · ' + esc(f.contact) : '') +
               '</div><div style="white-space:pre-wrap">' +
               esc(f.message) +
-              '</div></div>'
+              '</div>' +
+              (window.kkReplyHtml ? window.kkReplyHtml(f) : '') +
+              '</div>'
           )
           .join('')
       : '<div class="mini">No feedback yet.</div>') +
@@ -294,6 +296,7 @@ $('#fbS').onclick = async () => {
   }
 };
 </script>
+<script src="kk-reply.js"></script>
 <script src="pv.js" defer></script>
 <script src="kk-family.js" defer></script>
 </body>
