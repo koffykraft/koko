@@ -17,6 +17,7 @@
   "subnav": [["farm", "Records"]],
   "modules": ["weather", "fieldlog", "team", "jobs", "ledger", "land"],
   "settings": {
+    "rows": { "spacing": 3, "rowSpacing": 3, "kinds": [["Cocoa", "#ffd166"], ["Shade or overstorey", "#9b5de5"], ["Intercrop", "#4cc9f0"], ["Short-term crop", "#80ed99"], ["Boundary", "#ff4d6d"]] },
     "fieldlog": {
       "healthIssues": ["Black pod rot", "Charcoal pod rot", "Vascular streak dieback", "Stem canker", "Tea mosquito bug", "Mealybug", "Pod borer", "Squirrels and rats", "Nutrient deficiency", "Drought stress", "Waterlogging", "Weeds", "Other"]
     },

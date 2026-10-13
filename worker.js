@@ -955,7 +955,7 @@ export default {
       await recordTypesReady(e);
       const b = await body(r),
         recs = Array.isArray(b.records) ? b.records.slice(0, 500) : [];
-      const types = ['estate', 'plot', 'harvest', 'process', 'green', 'batch', 'tasting', 'lib'];
+      const types = ['estate', 'plot', 'harvest', 'process', 'green', 'batch', 'tasting', 'lib', 'row'];
       const cnt = await e.DB.prepare('SELECT COUNT(*) AS n FROM origin_records WHERE owner_user_id=?')
         .bind(me.id)
         .first();
