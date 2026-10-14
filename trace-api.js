@@ -376,13 +376,13 @@ export async function traceApi(r, e, p, me, H, isAdmin, ctx) {
           H.sendEmail(
             e,
             to2,
-            'Coffee lot sent to you: ' + lot.title,
+            'Cocoa lot sent to you: ' + lot.title,
             from +
-              ' has sent you a coffee lot through KoffyKraft: ' +
+              ' has sent you a cocoa lot through Koko by KoffyKraft: ' +
               lot.title +
               '.\n\nSign in with this email address and open ' +
               base +
-              "/trace.html to confirm the weight you received. Once confirmed, the lot's passport shows the handoff, and your roasts can be added to it.\n\nPassport: " +
+              "/trace.html to confirm the weight you received. Once confirmed, the lot's passport shows the handoff, and your chocolate batches can be added to it.\n\nPassport: " +
               base +
               '/trace.html#p/' +
               lot.token
