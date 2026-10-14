@@ -4,7 +4,7 @@
   "compatibility_date": "2026-09-21",
   "observability": { "enabled": true },
   "main": "worker.js",
-  "triggers": { "crons": ["40 18 * * *"] },
+  "triggers": { "crons": ["15 0 * * *"] },
   "vars": {
     "AUTH_EMAIL_FROM": "Koko by KoffyKraft <signin@koffykraft.coffee>",
     "ADMIN_EMAILS": "thomas@thumpassery.com,info@tagro.in"
