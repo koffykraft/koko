@@ -10,4 +10,4 @@ Live: https://koko.koffykraft.coffee (also https://koko.tagroos.workers.dev)
 Built from the KoffyKraft engines (https://github.com/koffykraft/workbook). Read HANDOVER.md first.
 
 Licence: AGPL-3.0 with additional terms (see NOTICE). Guide text CC BY-SA 4.0.
-Commercial licence: info@koffykraft.coffee.
+Commercial licence: info@koffykraft.com.

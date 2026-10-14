@@ -7,7 +7,7 @@ const APP = {
   about: 'Cocoa from tree to bar.',
   color: '#7a3e26',
   bg: '#f7f3ee',
-  feedbackTo: 'info@koffykraft.coffee',
+  feedbackTo: 'info@koffykraft.com',
   account: 'account.html',
   placesPage: 'farm',
   syncRecords: false,
