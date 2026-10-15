@@ -25,3 +25,4 @@ ledger-api.js
 land-api.js
 *.module.json
 kk-app.json
+photos-api.js

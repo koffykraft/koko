@@ -45,6 +45,8 @@ const CORE = [
   './trace-core.js',
   './qrcode.js',
   './sharecard.js',
+  './kk-photos.js',
+  './kk-crew.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',

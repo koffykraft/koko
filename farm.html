@@ -75,7 +75,7 @@
 <div id="view"></div>
 <div id="kf"></div>
 </main>
-<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script><script src="sharecard.js"></script><script src="qrcode.js"></script><script src="kk-units.js" defer></script>
+<script src="koko.js"></script><script src="koko-data.js"></script><script src="sync.js"></script><script src="origin-db.js"></script><script src="sharecard.js"></script><script src="kk-photos.js"></script><script src="kk-crew.js"></script><script src="qrcode.js"></script><script src="kk-units.js" defer></script>
 <script>
 // Farm records: farms, blocks, pod harvests, fermentation and drying runs, dry bean lots.
 // Stored on this device (KokoRecords); when signed in, synced to your Koko account.
@@ -561,8 +561,11 @@ function lrow(cols, x) {
     '<button type="button" class="btn small" data-del aria-label="Remove row">✕</button></div>'
   );
 }
+let PH = null; // the photos of the record being edited
 function collect(t) {
   const r = { ...(CUR || {}), type: t };
+  if (PH) r.photos = PH.photos;
+  if (PH && (t === 'harvest' || t === 'process')) r.crew = PH.crew.filter(x => x.who || x.start);
   document.querySelectorAll('#form [data-k]').forEach(el => {
     const k = el.dataset.k;
     r[k] = el.type === 'number' ? (el.value === '' ? '' : +el.value) : el.value.trim();
@@ -820,15 +823,32 @@ async function editView(t, id) {
     '<div class="two" id="form">' +
     FIELDS[t].map(f => fieldHtml(t, f, r)).join('') +
     extra +
+    (t === 'harvest' || t === 'process'
+      ? '<div class="full"><b>People and hours</b><div id="kkCrew"></div></div>'
+      : '') +
+    '<div class="full"><b>Photos</b><div id="kkPhotos"></div></div>' +
     '</div><div class="row bar"><button class="btn cocoa" id="save">Save</button><a class="btn" href="#' +
     tb[1] +
     '">Cancel</a>' +
     (CUR ? '<button class="btn" id="card">Image or PDF</button>' : '') +
     (CUR ? '<button class="btn danger" id="del" style="margin-left:auto">Delete</button>' : '') +
     '</div>';
+  PH = { id: r.id || '', photos: (r.photos || []).slice(), crew: (r.crew || []).map(x => ({ ...x })) };
+  KKPHOTO.mount($('#kkPhotos'), () => PH);
+  KKCREW.mount(
+    $('#kkCrew'),
+    () => PH,
+    () => {
+      const d = $('#form [data-k="date"]') || $('#form [data-k="start"]');
+      return String((d && d.value) || r.date || r.start || '').slice(0, 10);
+    }
+  );
   if ($('#card'))
-    $('#card').onclick = () =>
-      KKCARD.open([shareCard(t, CUR)], { heading: title(t, CUR), brand: brandOf(t, CUR) });
+    $('#card').onclick = async () => {
+      const d = shareCard(t, CUR);
+      d.pics = await KKPHOTO.images(PH.photos, 2);
+      KKCARD.open([d], { heading: title(t, CUR), brand: brandOf(t, CUR) });
+    };
   const form = $('#form');
   form.addEventListener('input', live);
   form.addEventListener('change', e => {
@@ -907,10 +927,12 @@ function card(t, r) {
       ['Wet beans', r.wetKg ? r.wetKg + ' kg' : ''],
       ['Pulp Brix', r.brix ? r.brix + ' °Bx' : ''],
       ['Pods kept', r.podDays ? r.podDays + ' days' : ''],
+      ['People and hours', KKCREW.summary(r)],
     ],
     process: (() => {
       const s = fermentSummary(r);
       return [
+        ['People and hours', KKCREW.summary(r)],
         ['Protocol', r.protocol],
         ['Method', r.method],
         ['Starter yeast', r.starter && r.starter !== 'None' ? r.starter : ''],
