@@ -804,6 +804,11 @@ async function editView(t, id) {
       encodeURIComponent(CUR.id) +
       '">Taste it</a></div></div>';
   }
+  if (['plot', 'harvest', 'process'].includes(t) && CUR && CUR.id)
+    extra +=
+      '<div class="card full"><b>Lot passport</b><div class="mini">Seal this record and what led to it. A cocoa lot made from it later carries on the same passport.</div><div class="row" style="margin-top:8px"><button class="btn small cocoa" type="button" id="pass">' +
+      (CUR.traceLot ? 'Seal changes' : 'Passport and QR') +
+      '</button></div></div>';
   $('#view').innerHTML =
     '<a href="#' +
     tb[1] +
@@ -949,9 +954,34 @@ function card(t, r) {
     loc: r.lat && r.lng ? (+r.lat).toFixed(5) + ', ' + (+r.lng).toFixed(5) : '',
   };
 }
-function openPassport(g) {
+// Any record from the block onward can carry a passport; a lot made from a sealed run carries it on.
+function chainOf(t, r) {
+  if (t === 'green') return lineage(r);
+  const hs =
+    t === 'process'
+      ? (r.harvestIds || []).map(id => byId('harvest', id)).filter(Boolean)
+      : t === 'harvest'
+        ? [r]
+        : [];
+  const plots =
+    t === 'plot'
+      ? [r]
+      : [...new Set(hs.flatMap(h => h.plotIds || []))].map(id => byId('plot', id)).filter(Boolean);
+  const estates = [...new Set(plots.map(x => x.estateId))].map(id => byId('estate', id)).filter(Boolean);
+  return { p: t === 'process' ? r : null, hs, plots, estates };
+}
+async function openPassport(g) {
+  const T0 = g.type || 'green';
   const own = g.traceRole !== 'received';
-  const L = lineage(g);
+  const L = chainOf(T0, g);
+  if (!g.traceLot) {
+    const up = T0 === 'green' ? [L.p] : T0 === 'process' ? L.hs : [];
+    const from = up.find(x => x && x.traceLot && x.traceRole !== 'received');
+    if (from) {
+      Object.assign(g, { traceLot: from.traceLot, traceToken: from.traceToken });
+      await ORIGIN.put({ ...g });
+    }
+  }
   const items = [];
   const rec = (t, r, kg, geo) =>
     items.push({ kind: 'record', rtype: t, rid: r.id, card: card(t, r), kg: kg || {}, geo: geo || null });
@@ -962,9 +992,9 @@ function openPassport(g) {
     );
     L.hs.forEach(h => rec('harvest', h, { cherry: +h.wetKg || null }));
     if (L.p) rec('process', L.p, { in: +L.p.wetKg || null, out: +L.p.dryKg || null });
-    rec('green', g, { green: +g.weightKg || null });
+    if (T0 === 'green') rec('green', g, { green: +g.weightKg || null });
   }
-  for (const b of (DB.batch || []).filter(x => x.lotId === g.id))
+  for (const b of T0 === 'green' ? (DB.batch || []).filter(x => x.lotId === g.id) : [])
     items.push({
       kind: 'roast',
       rid: b.id,
@@ -990,7 +1020,8 @@ function openPassport(g) {
       'kk_trace_plan',
       JSON.stringify({
         greenId: g.id,
-        title: title('green', g),
+        rtype: T0,
+        title: title(T0, g),
         role: own ? 'owner' : 'buyer',
         lot: g.traceLot || null,
         items,
