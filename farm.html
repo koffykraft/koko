@@ -974,6 +974,7 @@ function card(t, r) {
     rows: rows.filter(x => x[1] !== '' && x[1] != null).map(x => [x[0], String(x[1])]),
     notes: r.notes || '',
     loc: r.lat && r.lng ? (+r.lat).toFixed(5) + ', ' + (+r.lng).toFixed(5) : '',
+    pics: KKPHOTO.sealed(r.photos),
   };
 }
 // Any record from the block onward can carry a passport; a lot made from a sealed run carries it on.
@@ -1037,6 +1038,14 @@ async function openPassport(g) {
       },
       kg: { green: +b.beansKg || null },
     });
+  if (own) {
+    toast('Preparing photos…');
+    await KKPHOTO.publish(
+      [...L.estates, ...L.plots, ...L.hs, L.p, T0 === 'green' ? g : null]
+        .filter(Boolean)
+        .flatMap(x => x.photos || [])
+    );
+  }
   try {
     sessionStorage.setItem(
       'kk_trace_plan',
