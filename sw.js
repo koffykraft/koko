@@ -1,5 +1,5 @@
 // KoffyKraft (C) 2026 T M Thomas. AGPL-3.0 with additional terms (attribution, names): see NOTICE.
-const CACHE = 'koko-ee0b8711b5';
+const CACHE = 'koko-d9d838c185';
 const CORE = [
   './app.config.js',
   './app.js',
