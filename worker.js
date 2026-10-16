@@ -358,7 +358,7 @@ export default {
       return j({ ok: true });
     }
     {
-      const H = { j, body, sendEmail };
+      const H = { who: () => user(r, e), j, body, sendEmail };
       const x = await tracePublic(r, e, p, H);
       if (x) return x;
     }
