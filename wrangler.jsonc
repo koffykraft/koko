@@ -4,6 +4,7 @@
   "compatibility_date": "2026-09-21",
   "observability": { "enabled": true },
   "main": "worker.js",
+  "build": { "command": "node scripts/stamp-sw.mjs" },
   "triggers": { "crons": ["15 0 * * *"] },
   "vars": {
     "AUTH_EMAIL_FROM": "Koko by KoffyKraft <signin@koffykraft.coffee>",
